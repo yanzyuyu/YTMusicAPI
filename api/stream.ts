@@ -30,7 +30,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return;
     }
 
-    const streamData = await resolveStream(id);
+    const rawStart = (query.start || query.t || "").trim();
+    const start = rawStart ? Math.max(0, parseInt(rawStart, 10)) : 0;
+
+    const streamData = await resolveStream(id, start);
     const shouldPlay = query.play === "true" || query.play === "1";
 
     if (shouldPlay && streamData.bestAudio) {

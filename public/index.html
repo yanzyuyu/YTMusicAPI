@@ -1040,12 +1040,16 @@
           <div class="code-block">GET /api/search?q={query}&amp;type={songs|videos|albums|artists|playlists}</div>
         </div>
         <div>
-          <div style="font-weight:600;margin-bottom:4px;">Stream &amp; Direct Playback</div>
-          <div class="code-block">GET /api/stream?id={videoId}&amp;play=true  &lt;-- Redirect 302 directly to Google Video CDN</div>
+          <div style="font-weight:600;margin-bottom:4px;">Song Details &amp; Duration</div>
+          <div class="code-block">GET /api/song?id={videoId}  &lt;-- Returns durationSeconds, duration string, high-res covers</div>
         </div>
         <div>
-          <div style="font-weight:600;margin-bottom:4px;">Synchronized Lyrics</div>
-          <div class="code-block">GET /api/lyrics?id={videoId}&amp;title={title}&amp;artist={artist}</div>
+          <div style="font-weight:600;margin-bottom:4px;">Stream &amp; Direct Playback</div>
+          <div class="code-block">GET /api/stream?id={videoId}&amp;play=true&amp;start={seconds}  &lt;-- Direct 302 Google Video CDN</div>
+        </div>
+        <div>
+          <div style="font-weight:600;margin-bottom:4px;">Synchronized Lyrics &amp; Offset Tuning</div>
+          <div class="code-block">GET /api/lyrics?id={videoId}&amp;title={title}&amp;artist={artist}&amp;duration={durSec}&amp;offset={seconds}</div>
         </div>
         <div>
           <div style="font-weight:600;margin-bottom:4px;">Up Next &amp; Radio Station</div>

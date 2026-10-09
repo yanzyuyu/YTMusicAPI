@@ -239,8 +239,16 @@ export async function resolveLyrics(
   videoId?: string,
   title?: string,
   artist?: string,
-  durationSeconds?: number
+  durationSeconds?: number,
+  offsetSeconds: number = 0
 ): Promise<LyricsResponseData> {
+  function applyOffset(lines: SyncedLyricLine[]): SyncedLyricLine[] {
+    if (!offsetSeconds || offsetSeconds === 0) return lines;
+    return lines.map(line => ({
+      time: Math.max(0, Math.round((line.time + offsetSeconds) * 100) / 100),
+      text: line.text
+    }));
+  }
   let ytLyricsText: string | null = null;
   let songTitle = title || "";
   let songArtist = artist || "";
@@ -298,7 +306,7 @@ export async function resolveLyrics(
       trackName: lrcResult.track || songTitle,
       artistName: lrcResult.artist || songArtist,
       plainLyrics: lrcResult.plain || ytLyricsText || "",
-      syncedLyrics: lrcResult.synced,
+      syncedLyrics: applyOffset(lrcResult.synced),
       rawSyncedLyrics: lrcResult.raw || null,
       isSynced: true,
       isEstimated: false,
@@ -311,7 +319,7 @@ export async function resolveLyrics(
       trackName: kugouResult.track || songTitle,
       artistName: kugouResult.artist || songArtist,
       plainLyrics: kugouResult.plain || ytLyricsText || "",
-      syncedLyrics: kugouResult.synced,
+      syncedLyrics: applyOffset(kugouResult.synced),
       rawSyncedLyrics: kugouResult.raw || null,
       isSynced: true,
       isEstimated: false,

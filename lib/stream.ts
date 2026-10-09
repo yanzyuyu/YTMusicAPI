@@ -7,8 +7,9 @@ const STREAM_INSTANCES = [
   "https://iv.datura.network"
 ];
 
-export async function resolveStream(videoId: string): Promise<StreamResponseData> {
-  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`;
+export async function resolveStream(videoId: string, startSeconds: number = 0): Promise<StreamResponseData> {
+  const startParam = startSeconds > 0 ? `&start=${Math.floor(startSeconds)}` : "";
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1${startParam}`;
   const audioStreams: AudioStreamItem[] = [];
   let videoTitle = "";
 

@@ -34,8 +34,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
     const rawDur = (query.duration || query.dur || "").trim();
     const duration = rawDur ? parseInt(rawDur, 10) : 0;
+    const rawOffset = (query.offset || "").trim();
+    const offset = rawOffset ? parseFloat(rawOffset) : 0;
 
-    const lyrics = await resolveLyrics(id, title, artist, duration);
+    const lyrics = await resolveLyrics(id, title, artist, duration, isNaN(offset) ? 0 : offset);
     sendJson(res, 200, lyrics);
   } catch {
     sendError(res, 500, "Failed to resolve lyrics", "ERR_LYRICS_FAILED");
