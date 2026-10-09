@@ -32,7 +32,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return;
     }
 
-    const lyrics = await resolveLyrics(id, title, artist);
+    const rawDur = (query.duration || query.dur || "").trim();
+    const duration = rawDur ? parseInt(rawDur, 10) : 0;
+
+    const lyrics = await resolveLyrics(id, title, artist, duration);
     sendJson(res, 200, lyrics);
   } catch {
     sendError(res, 500, "Failed to resolve lyrics", "ERR_LYRICS_FAILED");

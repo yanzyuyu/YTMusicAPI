@@ -69,10 +69,14 @@ export interface SyncedLyricLine {
 }
 
 export interface LyricsResponseData {
+  trackName?: string;
+  artistName?: string;
   plainLyrics: string;
   syncedLyrics: SyncedLyricLine[];
   rawSyncedLyrics: string | null;
-  source: "youtube" | "lrclib" | "none";
+  isSynced: boolean;
+  isEstimated: boolean;
+  source: "youtube" | "lrclib" | "estimated" | "none";
 }
 
 export interface AudioStreamItem {
