@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Lightweight YouTube Music player API ready for Vercel deployment",
   "type": "module",
+  "main": "api/index.ts",
   "scripts": {
     "dev": "node dist/scripts/server.js",
     "build": "tsc",

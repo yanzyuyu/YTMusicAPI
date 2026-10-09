@@ -1,4 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { sendJson, sendError, setCorsHeaders } from "../lib/http.js";
 import searchHandler from "./search.js";
 import songHandler from "./song.js";
@@ -8,6 +10,29 @@ import streamHandler from "./stream.js";
 import playlistHandler from "./playlist.js";
 import spotifyHandler from "./spotify.js";
 import healthHandler from "./health.js";
+
+let cachedIndexHtml: Buffer | null = null;
+let cachedDocsHtml: Buffer | null = null;
+
+async function getIndexHtml(): Promise<Buffer | null> {
+  if (cachedIndexHtml) return cachedIndexHtml;
+  try {
+    cachedIndexHtml = await readFile(join(process.cwd(), "public", "index.html"));
+    return cachedIndexHtml;
+  } catch {
+    return null;
+  }
+}
+
+async function getDocsHtml(): Promise<Buffer | null> {
+  if (cachedDocsHtml) return cachedDocsHtml;
+  try {
+    cachedDocsHtml = await readFile(join(process.cwd(), "public", "docs.html"));
+    return cachedDocsHtml;
+  } catch {
+    return null;
+  }
+}
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   setCorsHeaders(res);
@@ -27,6 +52,33 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   const cleanPath = pathname.replace(/\/+$/, "") || "/";
+  const lowerPath = cleanPath.toLowerCase();
+
+  if (lowerPath === "/" || lowerPath === "/index.html") {
+    const html = await getIndexHtml();
+    if (html) {
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Length": html.length,
+        "Cache-Control": "public, max-age=60"
+      });
+      res.end(html);
+      return;
+    }
+  }
+
+  if (lowerPath === "/docs" || lowerPath === "/docs.html") {
+    const html = await getDocsHtml();
+    if (html) {
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Length": html.length,
+        "Cache-Control": "public, max-age=60"
+      });
+      res.end(html);
+      return;
+    }
+  }
 
   if (cleanPath === "/api/search") {
     return searchHandler(req, res);
