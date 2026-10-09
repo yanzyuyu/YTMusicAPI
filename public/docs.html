@@ -579,6 +579,69 @@
       color: #38bdf8;
     }
 
+    .tester-output-wrapper {
+      position: relative;
+    }
+
+    .tester-output-wrapper.collapsed {
+      max-height: 220px;
+      overflow: hidden;
+    }
+
+    .tester-output-wrapper.expanded {
+      max-height: none;
+      overflow: visible;
+    }
+
+    .tester-fade {
+      display: none;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.96), transparent);
+      pointer-events: none;
+    }
+
+    .tester-output-wrapper.collapsed .tester-fade {
+      display: block;
+    }
+
+    .tester-expand-bar {
+      background-color: #0b1120;
+      border-top: 1px solid #1e293b;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-expand-more {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      font-family: var(--font);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+    }
+
+    .btn-expand-more:hover {
+      background-color: #334155;
+      color: #7dd3fc;
+      border-color: #475569;
+    }
+
+    .btn-expand-more svg {
+      transition: transform 0.2s ease;
+    }
+
     .step-list {
       display: flex;
       flex-direction: column;
@@ -656,7 +719,7 @@
         <span class="status-dot"></span>
         <span id="global-status-text">Server Online</span>
       </div>
-      <a href="/" class="nav-link">
+      <a href="/player" class="nav-link">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
         <span>Web Player</span>
       </a>
@@ -789,7 +852,16 @@
                 <span>Copy</span>
               </button>
             </div>
-            <pre class="code-content" id="tester-output">Click "Send Request" to test endpoint live...</pre>
+            <div id="tester-output-wrapper" class="tester-output-wrapper collapsed">
+              <pre class="code-content" id="tester-output">Click "Send Request" to test endpoint live...</pre>
+              <div id="tester-fade" class="tester-fade"></div>
+            </div>
+            <div id="tester-expand-bar" class="tester-expand-bar" style="display:none;">
+              <button id="tester-toggle-expand" class="btn-expand-more">
+                <span id="tester-expand-text">Lihat selengkapnya...</span>
+                <svg id="tester-expand-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -1498,6 +1570,45 @@ async function searchAndPlay(query: string) {
     const testerLatency = document.getElementById('tester-latency');
     const testerOutput = document.getElementById('tester-output');
     const testerCopyBtn = document.getElementById('tester-copy-btn');
+    const testerOutputWrapper = document.getElementById('tester-output-wrapper');
+    const testerExpandBar = document.getElementById('tester-expand-bar');
+    const testerToggleExpand = document.getElementById('tester-toggle-expand');
+    const testerExpandText = document.getElementById('tester-expand-text');
+    const testerExpandIcon = document.getElementById('tester-expand-icon');
+    let isTesterExpanded = false;
+
+    function refreshExpandButton() {
+      requestAnimationFrame(() => {
+        if (testerOutput.scrollHeight > 240) {
+          testerExpandBar.style.display = 'flex';
+          if (!isTesterExpanded) {
+            testerOutputWrapper.classList.add('collapsed');
+            testerOutputWrapper.classList.remove('expanded');
+            testerExpandText.textContent = 'Lihat selengkapnya...';
+            testerExpandIcon.style.transform = 'rotate(0deg)';
+          }
+        } else {
+          testerExpandBar.style.display = 'none';
+          testerOutputWrapper.classList.remove('collapsed');
+          testerOutputWrapper.classList.add('expanded');
+        }
+      });
+    }
+
+    testerToggleExpand.addEventListener('click', () => {
+      isTesterExpanded = !isTesterExpanded;
+      if (isTesterExpanded) {
+        testerOutputWrapper.classList.remove('collapsed');
+        testerOutputWrapper.classList.add('expanded');
+        testerExpandText.textContent = 'Ciutkan';
+        testerExpandIcon.style.transform = 'rotate(180deg)';
+      } else {
+        testerOutputWrapper.classList.add('collapsed');
+        testerOutputWrapper.classList.remove('expanded');
+        testerExpandText.textContent = 'Lihat selengkapnya...';
+        testerExpandIcon.style.transform = 'rotate(0deg)';
+      }
+    });
 
     testerSelect.addEventListener('change', () => {
       testerUrlInput.value = testerSelect.value;
@@ -1515,6 +1626,11 @@ async function searchAndPlay(query: string) {
     async function executeLiveTest() {
       const path = testerUrlInput.value.trim();
       if (!path) return;
+
+      isTesterExpanded = false;
+      testerExpandBar.style.display = 'none';
+      testerOutputWrapper.classList.remove('collapsed');
+      testerOutputWrapper.classList.add('expanded');
 
       testerStatus.textContent = 'Sending...';
       testerStatus.style.color = '#38bdf8';
@@ -1536,12 +1652,14 @@ async function searchAndPlay(query: string) {
           const text = await res.text();
           testerOutput.textContent = text.slice(0, 1000);
         }
+        refreshExpandButton();
       } catch (err) {
         const duration = Math.round(performance.now() - startTime);
         testerLatency.textContent = duration + ' ms';
         testerStatus.textContent = 'Network Error';
         testerStatus.style.color = '#dc2626';
         testerOutput.textContent = String(err);
+        refreshExpandButton();
       }
     }
 

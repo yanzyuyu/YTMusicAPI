@@ -13,6 +13,7 @@ import healthHandler from "./health.js";
 
 let cachedIndexHtml: Buffer | null = null;
 let cachedDocsHtml: Buffer | null = null;
+let cachedPlayerHtml: Buffer | null = null;
 
 async function getIndexHtml(): Promise<Buffer | null> {
   if (cachedIndexHtml) return cachedIndexHtml;
@@ -29,6 +30,16 @@ async function getDocsHtml(): Promise<Buffer | null> {
   try {
     cachedDocsHtml = await readFile(join(process.cwd(), "public", "docs.html"));
     return cachedDocsHtml;
+  } catch {
+    return getIndexHtml();
+  }
+}
+
+async function getPlayerHtml(): Promise<Buffer | null> {
+  if (cachedPlayerHtml) return cachedPlayerHtml;
+  try {
+    cachedPlayerHtml = await readFile(join(process.cwd(), "public", "player.html"));
+    return cachedPlayerHtml;
   } catch {
     return null;
   }
@@ -54,8 +65,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const cleanPath = pathname.replace(/\/+$/, "") || "/";
   const lowerPath = cleanPath.toLowerCase();
 
-  if (lowerPath === "/" || lowerPath === "/index.html") {
-    const html = await getIndexHtml();
+  if (lowerPath === "/" || lowerPath === "/index.html" || lowerPath === "/docs" || lowerPath === "/docs.html") {
+    const html = await getDocsHtml();
     if (html) {
       res.writeHead(200, {
         "Content-Type": "text/html; charset=utf-8",
@@ -67,8 +78,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
   }
 
-  if (lowerPath === "/docs" || lowerPath === "/docs.html") {
-    const html = await getDocsHtml();
+  if (lowerPath === "/player" || lowerPath === "/player.html") {
+    const html = await getPlayerHtml();
     if (html) {
       res.writeHead(200, {
         "Content-Type": "text/html; charset=utf-8",

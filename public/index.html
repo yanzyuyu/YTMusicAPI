@@ -3,28 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YTMusic Player & API</title>
+  <title>YTMusic API Documentation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script src="https://www.youtube.com/iframe_api"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #09090b;
-      --surface-1: #111114;
-      --surface-2: #18181c;
-      --surface-hover: #222227;
-      --border: rgba(255, 255, 255, 0.08);
-      --border-focus: rgba(255, 255, 255, 0.2);
-      --text: #fafafa;
-      --text-muted: #a1a1aa;
-      --text-dim: #71717a;
-      --accent: #22c55e;
-      --accent-hover: #16a34a;
-      --accent-dim: rgba(34, 197, 94, 0.12);
-      --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      --mono: 'JetBrains Mono', monospace;
-      --radius: 2px;
+      --bg: #fcfcfd;
+      --surface: #ffffff;
+      --surface-subtle: #f8fafc;
+      --surface-muted: #f1f5f9;
+      --border: #e2e8f0;
+      --border-subtle: #edf2f7;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
+      --accent: #16a34a;
+      --accent-hover: #15803d;
+      --accent-surface: #f0fdf4;
+      --accent-border: #bbf7d0;
+      --method-get: #059669;
+      --method-get-bg: #ecfdf5;
+      --method-get-border: #a7f3d0;
+      --code-bg: #0f172a;
+      --code-text: #f8fafc;
+      --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+      --radius: 4px;
+      --radius-sm: 2px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
     }
 
     * {
@@ -33,29 +41,34 @@
       padding: 0;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       background-color: var(--bg);
       color: var(--text);
       font-family: var(--font);
-      height: 100vh;
-      display: grid;
-      grid-template-rows: auto 1fr 88px;
-      overflow: hidden;
+      line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    header {
-      background-color: var(--surface-1);
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
+      height: 60px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
-      z-index: 30;
+      padding: 0 24px;
     }
 
-    .brand-wrap {
+    .brand-group {
       display: flex;
       align-items: center;
       gap: 12px;
@@ -64,9 +77,10 @@
     }
 
     .brand-logo {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       color: var(--accent);
+      flex-shrink: 0;
     }
 
     .brand-title {
@@ -75,1794 +89,1621 @@
       letter-spacing: -0.02em;
     }
 
-    .brand-tag {
-      font-size: 0.7rem;
+    .brand-version {
+      font-size: 0.72rem;
       font-family: var(--mono);
+      font-weight: 600;
       color: var(--accent);
-      background-color: var(--accent-dim);
+      background-color: var(--accent-surface);
+      border: 1px solid var(--accent-border);
       padding: 2px 6px;
-      border: 1px solid rgba(34, 197, 94, 0.25);
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
     }
 
-    .search-box {
-      flex: 1;
-      max-width: 540px;
-      position: relative;
+    .nav-actions {
       display: flex;
       align-items: center;
+      gap: 12px;
     }
 
-    .search-icon {
-      position: absolute;
-      left: 12px;
-      width: 16px;
-      height: 16px;
-      color: var(--text-dim);
-      pointer-events: none;
-    }
-
-    .search-input {
-      width: 100%;
-      background-color: var(--surface-2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 0.88rem;
-      padding: 9px 36px 9px 38px;
-      border-radius: var(--radius);
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-
-    .search-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent);
-    }
-
-    .search-clear {
-      position: absolute;
-      right: 10px;
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      cursor: pointer;
-      display: none;
-      padding: 4px;
-    }
-
-    .search-clear:hover {
-      color: var(--text);
-    }
-
-    .top-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn-top {
-      background-color: var(--surface-2);
-      border: 1px solid var(--border);
+    .nav-link {
+      font-size: 0.85rem;
+      font-weight: 600;
       color: var(--text-muted);
-      font-family: var(--font);
-      font-size: 0.82rem;
-      font-weight: 500;
-      padding: 7px 14px;
-      border-radius: var(--radius);
-      cursor: pointer;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      transition: color 0.15s, background-color 0.15s;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: background-color 0.15s, color 0.15s;
-      text-decoration: none;
     }
 
-    .btn-top:hover, .btn-top.active {
+    .nav-link:hover {
       color: var(--text);
-      background-color: var(--surface-hover);
-      border-color: var(--border-focus);
+      background-color: var(--surface-muted);
     }
 
-    .app-body {
+    .nav-link-btn {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--surface);
+      background-color: var(--text);
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: opacity 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link-btn:hover {
+      opacity: 0.9;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent);
+      background-color: var(--accent-surface);
+      border: 1px solid var(--accent-border);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--accent);
+      border-radius: 1px;
+    }
+
+    .doc-layout {
       display: grid;
-      grid-template-columns: 220px 1fr 360px;
-      overflow: hidden;
-      background-color: var(--bg);
+      grid-template-columns: 260px 1fr;
+      max-width: 1440px;
+      margin: 0 auto;
+      min-height: calc(100vh - 60px);
     }
 
-    @media (max-width: 1100px) {
-      .app-body {
-        grid-template-columns: 70px 1fr 320px;
-      }
-    }
-
-    @media (max-width: 860px) {
-      .app-body {
+    @media (max-width: 900px) {
+      .doc-layout {
         grid-template-columns: 1fr;
       }
-      aside.sidebar, aside.lyrics-panel {
+      .doc-sidebar {
         display: none;
       }
     }
 
-    .sidebar {
-      background-color: var(--surface-1);
+    .doc-sidebar {
+      position: sticky;
+      top: 60px;
+      height: calc(100vh - 60px);
+      overflow-y: auto;
       border-right: 1px solid var(--border);
-      padding: 18px 12px;
+      background-color: var(--surface-subtle);
+      padding: 24px 16px;
       display: flex;
       flex-direction: column;
       gap: 24px;
-      overflow-y: auto;
     }
 
-    .nav-group-title {
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sidebar-heading {
       font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--text-dim);
-      padding: 0 8px 6px;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      margin-bottom: 2px;
     }
 
-    .nav-list {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .nav-btn {
+    .sidebar-link {
       display: flex;
       align-items: center;
-      gap: 12px;
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-family: var(--font);
-      font-size: 0.86rem;
+      gap: 8px;
+      font-size: 0.84rem;
       font-weight: 500;
-      padding: 9px 10px;
-      border-radius: var(--radius);
-      cursor: pointer;
-      text-align: left;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
       transition: background-color 0.12s, color 0.12s;
-      width: 100%;
     }
 
-    .nav-btn svg {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-    }
-
-    .nav-btn:hover {
-      background-color: var(--surface-hover);
+    .sidebar-link:hover {
+      background-color: var(--surface-muted);
       color: var(--text);
     }
 
-    .nav-btn.active {
-      background-color: var(--surface-2);
+    .sidebar-link.active {
+      background-color: var(--surface);
       color: var(--accent);
       font-weight: 600;
-    }
-
-    .quick-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      padding: 0 4px;
-    }
-
-    .chip-btn {
-      background-color: var(--surface-2);
+      box-shadow: var(--shadow-sm);
       border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      padding: 4px 8px;
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: all 0.15s;
     }
 
-    .chip-btn:hover {
-      background-color: var(--surface-hover);
-      color: var(--text);
-      border-color: var(--border-focus);
-    }
-
-    .main-view {
-      overflow-y: auto;
-      padding: 24px 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-    }
-
-    .hero-card {
-      background-color: var(--surface-1);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
-
-    .hero-info {
-      flex: 1;
-    }
-
-    .hero-kicker {
-      font-size: 0.72rem;
+    .method-tag {
       font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+
+    .method-tag.get {
+      background-color: var(--method-get-bg);
+      color: var(--method-get);
+      border: 1px solid var(--method-get-border);
+    }
+
+    .doc-main {
+      padding: 40px 48px 100px;
+      overflow-y: auto;
+      max-width: 980px;
+    }
+
+    @media (max-width: 640px) {
+      .doc-main {
+        padding: 24px 20px 80px;
+      }
+    }
+
+    .editorial-kicker {
+      font-size: 0.78rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: var(--accent);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
-    .hero-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 4px;
-    }
-
-    .hero-meta {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      margin-bottom: 16px;
-    }
-
-    .hero-actions {
-      display: flex;
-      gap: 10px;
-    }
-
-    .btn-hero-play {
-      background-color: var(--accent);
-      color: #000;
-      border: none;
-      font-family: var(--font);
-      font-size: 0.88rem;
-      font-weight: 600;
-      padding: 9px 18px;
-      border-radius: var(--radius);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: background-color 0.15s;
-    }
-
-    .btn-hero-play:hover {
-      background-color: var(--accent-hover);
-    }
-
-    .hero-cover {
-      width: 120px;
-      height: 120px;
-      border-radius: var(--radius);
-      object-fit: cover;
-      background-color: var(--surface-2);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-    }
-
-    .section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    .page-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      line-height: 1.2;
       margin-bottom: 14px;
     }
 
+    .page-intro {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+      margin-bottom: 36px;
+    }
+
+    .doc-section {
+      margin-bottom: 64px;
+      scroll-margin-top: 80px;
+    }
+
     .section-title {
-      font-size: 1rem;
+      font-size: 1.5rem;
       font-weight: 700;
-      letter-spacing: -0.01em;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .section-desc {
-      font-size: 0.78rem;
-      color: var(--text-dim);
-    }
-
-    .track-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .track-row {
-      display: grid;
-      grid-template-columns: 36px 44px 1fr 140px 60px 40px;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 12px;
-      border-radius: var(--radius);
-      background-color: transparent;
-      border: 1px solid transparent;
-      cursor: pointer;
-      transition: background-color 0.12s, border-color 0.12s;
-    }
-
-    .track-row:hover {
-      background-color: var(--surface-1);
-      border-color: var(--border);
-    }
-
-    .track-row.active {
-      background-color: var(--accent-dim);
-      border-color: rgba(34, 197, 94, 0.3);
-    }
-
-    .track-index {
-      font-size: 0.8rem;
-      font-family: var(--mono);
-      color: var(--text-dim);
-      text-align: center;
-    }
-
-    .track-row.active .track-index {
-      color: var(--accent);
-      font-weight: 700;
-    }
-
-    .track-thumb-img {
-      width: 44px;
-      height: 44px;
-      border-radius: var(--radius);
-      object-fit: cover;
-      background-color: var(--surface-2);
-    }
-
-    .track-details {
-      min-width: 0;
-    }
-
-    .track-name {
-      font-size: 0.9rem;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--text);
-    }
-
-    .track-artist {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 2px;
-    }
-
-    .track-album {
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .track-time {
-      font-size: 0.8rem;
-      font-family: var(--mono);
-      color: var(--text-dim);
-      text-align: right;
-    }
-
-    .track-action-btn {
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 6px;
-      border-radius: var(--radius);
-    }
-
-    .track-action-btn:hover {
-      color: var(--text);
-      background-color: var(--surface-hover);
-    }
-
-    .lyrics-panel {
-      background-color: var(--surface-1);
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .lyrics-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .lyrics-title {
-      font-size: 0.86rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-
-    .lyrics-source-badge {
-      font-size: 0.72rem;
-      font-family: var(--mono);
-      color: var(--accent);
-    }
-
-    .lyrics-scroll-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      scroll-behavior: smooth;
-    }
-
-    .lyric-item {
       font-size: 0.95rem;
-      color: var(--text-dim);
-      line-height: 1.5;
-      cursor: pointer;
-      padding: 4px 6px;
-      border-radius: var(--radius);
-      transition: color 0.15s, background-color 0.15s, transform 0.15s;
-    }
-
-    .lyric-item:hover {
       color: var(--text-muted);
-      background-color: rgba(255, 255, 255, 0.03);
+      margin-bottom: 20px;
+      line-height: 1.6;
     }
 
-    .lyric-item.active {
-      color: var(--accent);
-      font-weight: 700;
-      font-size: 1.05rem;
-      background-color: var(--accent-dim);
-      padding-left: 10px;
-      border-left: 2px solid var(--accent);
-    }
-
-    .lyrics-empty {
-      color: var(--text-dim);
-      font-size: 0.88rem;
-      text-align: center;
-      margin-top: 40px;
-    }
-
-    .queue-header {
-      padding: 14px 20px 8px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-dim);
-      border-top: 1px solid var(--border);
-    }
-
-    .queue-body {
-      height: 220px;
-      overflow-y: auto;
-      padding: 6px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .queue-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 6px 8px;
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: background-color 0.12s;
-    }
-
-    .queue-row:hover {
-      background-color: var(--surface-hover);
-    }
-
-    .queue-row-thumb {
-      width: 34px;
-      height: 34px;
-      border-radius: var(--radius);
-      object-fit: cover;
-      background-color: var(--surface-2);
-    }
-
-    .queue-row-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .queue-row-title {
-      font-size: 0.82rem;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .queue-row-artist {
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .queue-row-time {
-      font-size: 0.72rem;
-      font-family: var(--mono);
-      color: var(--text-dim);
-    }
-
-    .player-dock {
-      background-color: var(--surface-1);
-      border-top: 1px solid var(--border);
-      padding: 0 24px;
-      display: grid;
-      grid-template-columns: 280px 1fr 280px;
-      align-items: center;
-      gap: 20px;
-      z-index: 40;
-    }
-
-    @media (max-width: 768px) {
-      .player-dock {
-        grid-template-columns: 1fr 140px;
-      }
-      .dock-volume-wrap {
-        display: none;
-      }
-    }
-
-    .dock-now-playing {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .dock-thumb {
-      width: 52px;
-      height: 52px;
-      border-radius: var(--radius);
-      object-fit: cover;
-      background-color: var(--surface-2);
-      flex-shrink: 0;
-    }
-
-    .dock-track-text {
-      min-width: 0;
-    }
-
-    .dock-title {
-      font-size: 0.9rem;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--text);
-    }
-
-    .dock-artist {
-      font-size: 0.76rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 2px;
-    }
-
-    .dock-center-controls {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      max-width: 620px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    .dock-buttons-row {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-    }
-
-    .btn-dock-icon {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: color 0.15s, transform 0.1s;
-    }
-
-    .btn-dock-icon:hover {
-      color: var(--text);
-    }
-
-    .btn-dock-icon.active {
-      color: var(--accent);
-    }
-
-    .btn-play-hero {
-      width: 36px;
-      height: 36px;
-      border-radius: var(--radius);
-      background-color: var(--text);
-      color: #000;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background-color 0.15s, transform 0.1s;
-    }
-
-    .btn-play-hero:hover {
-      background-color: var(--accent);
-      transform: scale(1.04);
-    }
-
-    .dock-progress-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-    }
-
-    .dock-time-text {
-      font-size: 0.74rem;
-      font-family: var(--mono);
-      color: var(--text-dim);
-      width: 38px;
-      text-align: center;
-    }
-
-    .dock-range-slider {
-      flex: 1;
-      height: 18px;
-      background: transparent;
-      appearance: none;
-      outline: none;
-      cursor: pointer;
-    }
-
-    .dock-range-slider::-webkit-slider-runnable-track {
-      height: 4px;
-      background-color: var(--surface-2);
-      border-radius: 2px;
-    }
-
-    .dock-range-slider:hover::-webkit-slider-runnable-track {
-      background-color: #27272a;
-    }
-
-    .dock-range-slider::-webkit-slider-thumb {
-      appearance: none;
-      width: 12px;
-      height: 12px;
-      border-radius: var(--radius);
-      background-color: var(--accent);
-      cursor: pointer;
-      margin-top: -4px;
-      transition: transform 0.1s;
-    }
-
-    .dock-range-slider:active::-webkit-slider-thumb {
-      transform: scale(1.2);
-    }
-
-    .dock-range-slider::-moz-range-track {
-      height: 4px;
-      background-color: var(--surface-2);
-      border-radius: 2px;
-    }
-
-    .dock-range-slider::-moz-range-thumb {
-      width: 12px;
-      height: 12px;
-      border: none;
-      border-radius: var(--radius);
-      background-color: var(--accent);
-      cursor: pointer;
-    }
-
-    .dock-right-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 14px;
-    }
-
-    .dock-volume-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .dock-vol-slider {
-      width: 80px;
-      height: 4px;
-      background-color: var(--surface-2);
-      border-radius: 2px;
-      appearance: none;
-      outline: none;
-    }
-
-    .dock-vol-slider::-webkit-slider-thumb {
-      appearance: none;
-      width: 8px;
-      height: 8px;
-      border-radius: var(--radius);
-      background-color: var(--text);
-      cursor: pointer;
-    }
-
-    .inspector-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background-color: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(6px);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .inspector-modal.open {
-      display: flex;
-    }
-
-    .inspector-dialog {
-      background-color: var(--surface-1);
+    .card {
+      background-color: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      width: 100%;
-      max-width: 800px;
-      max-height: 85vh;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+      overflow: hidden;
     }
 
-    .inspector-head {
+    .card-header {
       padding: 16px 20px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      background-color: var(--surface-subtle);
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
-    .inspector-body {
-      padding: 20px;
-      overflow-y: auto;
+    .endpoint-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .endpoint-path {
+      font-family: var(--mono);
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    .param-table-wrap {
+      overflow-x: auto;
+      margin: 16px 0 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .param-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    .param-table th {
+      background-color: var(--surface-subtle);
+      color: var(--text);
+      font-weight: 600;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .param-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text);
+    }
+
+    .param-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .param-name {
+      font-family: var(--mono);
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .param-type {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .param-required {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #dc2626;
+      background-color: #fef2f2;
+      border: 1px solid #fecaca;
+      padding: 1px 5px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .param-optional {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background-color: var(--surface-muted);
+      padding: 1px 5px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .code-container {
+      background-color: var(--code-bg);
+      border-radius: var(--radius-sm);
+      border: 1px solid #1e293b;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+
+    .code-header {
+      background-color: #0b1120;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .code-lang-label {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .copy-btn {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 2px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background-color 0.12s, color 0.12s;
+    }
+
+    .copy-btn:hover {
+      background-color: #334155;
+      color: #f8fafc;
+    }
+
+    .copy-btn.copied {
+      background-color: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    pre.code-content {
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--code-text);
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+
+    .callout-box {
+      background-color: var(--surface-subtle);
+      border-left: 3px solid var(--accent);
+      border: 1px solid var(--border);
+      border-left-width: 3px;
+      border-left-color: var(--accent);
+      padding: 16px 20px;
+      border-radius: var(--radius-sm);
+      margin: 16px 0 24px;
+      font-size: 0.88rem;
+      color: var(--text);
+    }
+
+    .callout-box strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .tester-panel {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      padding: 24px;
+      margin: 24px 0 40px;
+    }
+
+    .tester-grid {
+      display: grid;
+      grid-template-columns: 160px 1fr auto;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .tester-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-select, .form-input {
+      font-family: var(--font);
+      font-size: 0.86rem;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background-color: var(--surface);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    .form-input {
+      font-family: var(--mono);
+      font-size: 0.84rem;
+    }
+
+    .btn-primary {
+      font-family: var(--font);
+      font-size: 0.86rem;
+      font-weight: 600;
+      padding: 9px 18px;
+      background-color: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.15s;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .tester-response-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background-color: #0b1120;
+      border: 1px solid #1e293b;
+      border-bottom: none;
+      border-top-left-radius: var(--radius-sm);
+      border-top-right-radius: var(--radius-sm);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
+    .tester-status-val {
+      font-weight: 700;
+      color: #4ade80;
+    }
+
+    .tester-latency-val {
+      color: #38bdf8;
+    }
+
+    .tester-output-wrapper {
+      position: relative;
+    }
+
+    .tester-output-wrapper.collapsed {
+      max-height: 220px;
+      overflow: hidden;
+    }
+
+    .tester-output-wrapper.expanded {
+      max-height: none;
+      overflow: visible;
+    }
+
+    .tester-fade {
+      display: none;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.96), transparent);
+      pointer-events: none;
+    }
+
+    .tester-output-wrapper.collapsed .tester-fade {
+      display: block;
+    }
+
+    .tester-expand-bar {
+      background-color: #0b1120;
+      border-top: 1px solid #1e293b;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-expand-more {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      font-family: var(--font);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+    }
+
+    .btn-expand-more:hover {
+      background-color: #334155;
+      color: #7dd3fc;
+      border-color: #475569;
+    }
+
+    .btn-expand-more svg {
+      transition: transform 0.2s ease;
+    }
+
+    .step-list {
       display: flex;
       flex-direction: column;
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .step-item {
+      display: flex;
       gap: 16px;
     }
 
-    .code-block {
-      background-color: var(--bg);
-      border: 1px solid var(--border);
-      padding: 12px 14px;
-      border-radius: var(--radius);
-      font-family: var(--mono);
-      font-size: 0.8rem;
-      color: #38bdf8;
-      overflow-x: auto;
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      background-color: var(--text);
+      color: var(--surface);
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
 
-    #yt-player-container {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0.01;
-      pointer-events: none;
-      bottom: 0;
-      left: 0;
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .step-text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0 0;
+      margin-top: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 16px;
     }
   </style>
 </head>
 <body>
-  <header>
-    <a href="/" class="brand-wrap">
-      <svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-      </svg>
-      <span class="brand-title">YTMusic</span>
-      <span class="brand-tag">Vercel Ready</span>
-    </a>
 
-    <div class="search-box">
-      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-      </svg>
-      <input type="text" id="main-search-input" class="search-input" placeholder="Search tracks, artists, or albums..." value="Die With A Smile">
-      <button id="clear-search-btn" class="search-clear" aria-label="Clear search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </button>
+  <header class="top-nav">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <a href="/" class="brand-group">
+        <svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+        <span class="brand-title">YTMusic Docs</span>
+      </a>
+      <span class="brand-version">v1.0.0</span>
     </div>
 
-    <div class="top-actions">
-      <button id="btn-open-spotify" class="btn-top" style="color:#22c55e;border-color:rgba(34,197,94,0.3);">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.208-2.35-1.435-5.308-1.76-8.793-.963-.334.077-.667-.13-.744-.464-.077-.334.13-.667.464-.744 3.811-.872 7.08-.507 9.722 1.106.294.18.387.563.208.857zm1.225-2.724c-.226.368-.71.482-1.078.256-2.69-1.653-6.79-2.132-9.972-1.167-.413.125-.853-.109-.978-.522-.125-.413.109-.853.522-.978 3.633-1.103 8.147-.568 11.25 1.333.368.226.482.71.256 1.078zm.105-2.835C14.692 8.94 9.385 8.764 6.297 9.7c-.495.15-1.022-.13-1.172-.625-.15-.495.13-1.022.625-1.172 3.548-1.077 9.404-.872 13.127 1.338.445.264.59.838.326 1.283-.264.445-.838.59-1.283.326z"/></svg>
-        <span>Import Spotify</span>
-      </button>
-      <a href="/docs" target="_blank" rel="noopener" class="btn-top" style="text-decoration:none;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-        <span>Docs</span>
+    <div class="nav-actions">
+      <div class="status-badge" id="global-status-badge">
+        <span class="status-dot"></span>
+        <span id="global-status-text">Server Online</span>
+      </div>
+      <a href="/player" class="nav-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+        <span>Web Player</span>
       </a>
-      <button id="btn-toggle-inspector" class="btn-top">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-        <span>Inspector</span>
-      </button>
-      <a href="/api/health" target="_blank" class="btn-top">
-        <span style="display:inline-block;width:6px;height:6px;background-color:var(--accent);border-radius:1px;"></span>
-        <span>Online</span>
+      <a href="/api/health" target="_blank" rel="noopener" class="nav-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        <span>Health JSON</span>
+      </a>
+      <a href="#vercel-deploy" class="nav-link-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 22 22 22"></polygon></svg>
+        <span>Deploy to Vercel</span>
       </a>
     </div>
   </header>
 
-  <div class="app-body">
-    <aside class="sidebar">
-      <div>
-        <div class="nav-group-title">Menu</div>
-        <div class="nav-list">
-          <button class="nav-btn active" data-view="discover">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
-            <span>Discover</span>
-          </button>
-          <button class="nav-btn" data-view="charts">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-            <span>Top Hits</span>
-          </button>
-          <button class="nav-btn" data-view="radio">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
-            <span>Radio Stations</span>
-          </button>
-          <button class="nav-btn" id="sidebar-btn-spotify">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.208-2.35-1.435-5.308-1.76-8.793-.963-.334.077-.667-.13-.744-.464-.077-.334.13-.667.464-.744 3.811-.872 7.08-.507 9.722 1.106.294.18.387.563.208.857zm1.225-2.724c-.226.368-.71.482-1.078.256-2.69-1.653-6.79-2.132-9.972-1.167-.413.125-.853-.109-.978-.522-.125-.413.109-.853.522-.978 3.633-1.103 8.147-.568 11.25 1.333.368.226.482.71.256 1.078zm.105-2.835C14.692 8.94 9.385 8.764 6.297 9.7c-.495.15-1.022-.13-1.172-.625-.15-.495.13-1.022.625-1.172 3.548-1.077 9.404-.872 13.127 1.338.445.264.59.838.326 1.283-.264.445-.838.59-1.283.326z"/></svg>
-            <span>Import Spotify</span>
-          </button>
-        </div>
+  <div class="doc-layout">
+    <aside class="doc-sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Getting Started</div>
+        <a href="#overview" class="sidebar-link active">Overview</a>
+        <a href="#live-tester" class="sidebar-link">Live API Tester</a>
+        <a href="#architecture" class="sidebar-link">Architecture & Specs</a>
       </div>
 
-      <div>
-        <div class="nav-group-title">Genres & Moods</div>
-        <div class="quick-chips">
-          <button class="chip-btn" data-query="Top Global Pop Hits 2026">Pop</button>
-          <button class="chip-btn" data-query="Trending Acoustic Ballads">Acoustic</button>
-          <button class="chip-btn" data-query="Electronic Dance Music festival">EDM</button>
-          <button class="chip-btn" data-query="Lofi Hip Hop beats to relax">Lo-Fi</button>
-          <button class="chip-btn" data-query="Modern Rock essentials">Rock</button>
-          <button class="chip-btn" data-query="R&B Soul classics">R&B</button>
-        </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Core Endpoints</div>
+        <a href="#endpoint-search" class="sidebar-link">
+          <span class="method-tag get">GET</span>
+          <span>/api/search</span>
+        </a>
+        <a href="#endpoint-song" class="sidebar-link">
+          <span class="method-tag get">GET</span>
+          <span>/api/song</span>
+        </a>
+        <a href="#endpoint-stream" class="sidebar-link">
+          <span class="method-tag get">GET</span>
+          <span>/api/stream</span>
+        </a>
+        <a href="#endpoint-lyrics" class="sidebar-link">
+          <span class="method-tag get">GET</span>
+          <span>/api/lyrics</span>
+        </a>
+        <a href="#endpoint-spotify" class="sidebar-link">
+          <span class="method-tag get">GET</span>
+          <span>/api/spotify</span>
+        </a>
+        <a href="#endpoint-next" class="sidebar-link">
+          <span class="method-tag get">GET</span>
+          <span>/api/next</span>
+        </a>
+        <a href="#endpoint-playlist" class="sidebar-link">
+          <span class="method-tag get">GET</span>
+          <span>/api/playlist</span>
+        </a>
+        <a href="#endpoint-health" class="sidebar-link">
+          <span class="method-tag get">GET</span>
+          <span>/api/health</span>
+        </a>
       </div>
 
-      <div>
-        <div class="nav-group-title">API Latency</div>
-        <div style="padding: 0 8px; font-size: 0.76rem; font-family: var(--mono); color: var(--text-dim);">
-          <div>Engine: <span style="color:var(--accent);">ytmusic-native</span></div>
-          <div>Response: <span id="metric-latency" style="color:var(--text);">-- ms</span></div>
-          <div>Streams: <span id="metric-streams" style="color:var(--text);">Direct 302</span></div>
-        </div>
-      </div>
-    </aside>
-
-    <main class="main-view">
-      <section class="hero-card">
-        <div class="hero-info">
-          <div class="hero-kicker">Featured Track</div>
-          <h1 id="hero-song-title" class="hero-title">Die With A Smile</h1>
-          <div id="hero-song-meta" class="hero-meta">Lady Gaga &amp; Bruno Mars &middot; 4:12</div>
-          <div class="hero-actions">
-            <button id="hero-play-btn" class="btn-hero-play">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-              <span>Play Now</span>
-            </button>
-          </div>
-        </div>
-        <img id="hero-cover-img" class="hero-cover" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%2318181c'/%3E%3C/svg%3E" alt="Featured Cover">
-      </section>
-
-      <section>
-        <div class="section-head">
-          <div>
-            <div id="view-title" class="section-title">Search Results</div>
-            <div id="view-subtitle" class="section-desc">Showing results from YouTube Music InnerTube</div>
-          </div>
-        </div>
-
-        <div id="track-table" class="track-grid">
-          <div style="padding: 24px; color: var(--text-dim); text-align: center;">Loading tracks...</div>
-        </div>
-      </section>
-    </main>
-
-    <aside class="lyrics-panel">
-      <div class="lyrics-header">
-        <span class="lyrics-title">Synchronized Lyrics</span>
-        <span id="lyrics-badge" class="lyrics-source-badge"></span>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Deployment</div>
+        <a href="#vercel-deploy" class="sidebar-link">Vercel CLI Guide</a>
+        <a href="#serverless-config" class="sidebar-link">vercel.json Config</a>
       </div>
 
-      <div id="lyrics-stream" class="lyrics-scroll-body">
-        <div class="lyrics-empty">Play a song to view real-time synchronized karaoke lyrics.</div>
-      </div>
-
-      <div class="queue-header">Up Next &middot; Radio Station</div>
-      <div id="radio-queue-list" class="queue-body">
-        <div style="color:var(--text-dim);font-size:0.78rem;padding:8px;">Queue is currently empty.</div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Integration</div>
+        <a href="#client-integration" class="sidebar-link">Mobile & APK Guide</a>
+        <a href="#code-snippets" class="sidebar-link">Code Snippets</a>
       </div>
     </aside>
-  </div>
 
-  <footer class="player-dock">
-    <div class="dock-now-playing">
-      <img id="dock-thumb-img" class="dock-thumb" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52'%3E%3Crect width='52' height='52' fill='%2318181c'/%3E%3C/svg%3E" alt="Track Cover">
-      <div class="dock-track-text">
-        <div id="dock-title-text" class="dock-title">Ready to stream</div>
-        <div id="dock-artist-text" class="dock-artist">Select a track</div>
-      </div>
-    </div>
-
-    <div class="dock-center-controls">
-      <div class="dock-buttons-row">
-        <button id="dock-btn-shuffle" class="btn-dock-icon" aria-label="Shuffle">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
-        </button>
-        <button id="dock-btn-prev" class="btn-dock-icon" aria-label="Previous">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-        </button>
-        <button id="dock-btn-rewind" class="btn-dock-icon" aria-label="Rewind 10 seconds" title="-10s">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
-        </button>
-        <button id="dock-btn-play" class="btn-play-hero" aria-label="Play or Pause">
-          <svg id="dock-icon-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          <svg id="dock-icon-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-        </button>
-        <button id="dock-btn-forward" class="btn-dock-icon" aria-label="Forward 10 seconds" title="+10s">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
-        </button>
-        <button id="dock-btn-next" class="btn-dock-icon" aria-label="Next">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-        </button>
-        <button id="dock-btn-repeat" class="btn-dock-icon" aria-label="Repeat">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
-        </button>
-      </div>
-
-      <div class="dock-progress-wrap">
-        <span id="dock-curr-time" class="dock-time-text">0:00</span>
-        <input type="range" id="dock-seek-bar" class="dock-range-slider" min="0" max="100" value="0">
-        <span id="dock-dur-time" class="dock-time-text">0:00</span>
-      </div>
-    </div>
-
-    <div class="dock-right-actions">
-      <div class="dock-volume-wrap">
-        <button id="btn-dock-mute" class="btn-dock-icon" aria-label="Mute">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-        </button>
-        <input type="range" id="dock-vol-bar" class="dock-vol-slider" min="0" max="1" step="0.05" value="1">
-      </div>
-    </div>
-  </footer>
-
-  <div id="inspector-overlay" class="inspector-modal">
-    <div class="inspector-dialog">
-      <div class="inspector-head">
-        <div style="font-weight:700;font-size:0.95rem;display:flex;align-items:center;gap:12px;">
-          <span>API Quick Reference</span>
-          <a href="/docs" target="_blank" rel="noopener" style="font-size:0.75rem;font-weight:600;color:var(--accent);text-decoration:none;border:1px solid rgba(34,197,94,0.3);padding:2px 8px;border-radius:2px;">Full Docs &rarr;</a>
-        </div>
-        <button id="close-inspector-btn" class="btn-top" style="padding:4px 8px;">Close</button>
-      </div>
-      <div class="inspector-body">
-        <div>
-          <div style="font-weight:600;margin-bottom:4px;">Search Endpoint</div>
-          <div class="code-block">GET /api/search?q={query}&amp;type={songs|videos|albums|artists|playlists}</div>
-        </div>
-        <div>
-          <div style="font-weight:600;margin-bottom:4px;">Song Details &amp; Duration</div>
-          <div class="code-block">GET /api/song?id={videoId}  &lt;-- Returns durationSeconds, duration string, high-res covers</div>
-        </div>
-        <div>
-          <div style="font-weight:600;margin-bottom:4px;">Stream &amp; Direct Playback</div>
-          <div class="code-block">GET /api/stream?id={videoId}&amp;play=true&amp;start={seconds}  &lt;-- Direct 302 Google Video CDN</div>
-        </div>
-        <div>
-          <div style="font-weight:600;margin-bottom:4px;">Synchronized Lyrics &amp; Offset Tuning</div>
-          <div class="code-block">GET /api/lyrics?id={videoId}&amp;title={title}&amp;artist={artist}&amp;duration={durSec}&amp;offset={seconds}</div>
-        </div>
-        <div>
-          <div style="font-weight:600;margin-bottom:4px;">Up Next &amp; Radio Station</div>
-          <div class="code-block">GET /api/next?id={videoId}  &lt;-- Generates 50 algorithmic next tracks</div>
-        </div>
-        <div>
-          <div style="font-weight:600;margin-bottom:4px;">Import Spotify Playlist</div>
-          <div class="code-block">GET /api/spotify?url={spotifyUrlOrId}&amp;match=true&amp;limit=5</div>
-        </div>
-        <div>
-          <div style="font-weight:600;margin-bottom:4px;">System Health</div>
-          <div class="code-block">GET /api/health</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="spotify-overlay" class="inspector-modal">
-    <div class="inspector-dialog" style="max-width:540px;">
-      <div class="inspector-head">
-        <div style="font-weight:700;font-size:0.95rem;display:flex;align-items:center;gap:8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.208-2.35-1.435-5.308-1.76-8.793-.963-.334.077-.667-.13-.744-.464-.077-.334.13-.667.464-.744 3.811-.872 7.08-.507 9.722 1.106.294.18.387.563.208.857zm1.225-2.724c-.226.368-.71.482-1.078.256-2.69-1.653-6.79-2.132-9.972-1.167-.413.125-.853-.109-.978-.522-.125-.413.109-.853.522-.978 3.633-1.103 8.147-.568 11.25 1.333.368.226.482.71.256 1.078zm.105-2.835C14.692 8.94 9.385 8.764 6.297 9.7c-.495.15-1.022-.13-1.172-.625-.15-.495.13-1.022.625-1.172 3.548-1.077 9.404-.872 13.127 1.338.445.264.59.838.326 1.283-.264.445-.838.59-1.283.326z"/></svg>
-          <span>Import Spotify Playlist</span>
-        </div>
-        <button id="close-spotify-btn" class="btn-top" style="padding:4px 8px;">Close</button>
-      </div>
-      <div class="inspector-body">
-        <p style="font-size:0.84rem;color:var(--text-muted);line-height:1.5;">
-          Paste a public Spotify playlist link or playlist ID to instantly import all songs and convert them into playable streams.
+    <main class="doc-main">
+      <section id="overview" class="doc-section">
+        <p class="editorial-kicker">Developer Reference</p>
+        <h1 class="page-title">YouTube Music & Spotify Player API</h1>
+        <p class="page-intro">
+          A lean, zero-dependency serverless music engine built with TypeScript. Provides full catalog search, high-bitrate audio streaming, studio-synchronized karaoke lyrics, and one-click Spotify playlist import without external SDK bloat or rate-limit lockouts.
         </p>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-          <input type="text" id="spotify-input-url" class="search-input" style="width:100%;background-color:var(--surface-2);border:1px solid var(--border);" placeholder="https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span id="spotify-import-status" style="font-size:0.78rem;font-family:var(--mono);color:var(--text-dim);"></span>
-            <button id="btn-do-spotify-import" class="btn-hero-play" style="padding:8px 16px;font-size:0.84rem;">
-              <span>Import &amp; Play</span>
+
+        <div class="callout-box">
+          <strong>Production Base URL</strong>
+          Use <code style="font-family:var(--mono);font-size:0.86rem;color:var(--accent);">https://&lt;your-deployment&gt;.vercel.app</code> for cloud serverless functions or <code style="font-family:var(--mono);font-size:0.86rem;color:var(--text);">http://localhost:3000</code> during local testing. All endpoints support standard CORS and require zero API keys.
+        </div>
+      </section>
+
+      <section id="live-tester" class="doc-section">
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span>Interactive Live API Tester</span>
+        </h2>
+        <p class="section-desc">
+          Execute live queries against your active backend directly from your browser. Verify response schemas, latency, and status codes in real time.
+        </p>
+
+        <div class="tester-panel">
+          <div class="tester-grid">
+            <select id="tester-select" class="form-select">
+              <option value="/api/search?q=Die+With+A+Smile&limit=5">GET /api/search</option>
+              <option value="/api/song?id=kPa7bsKwL-8">GET /api/song</option>
+              <option value="/api/stream?id=kPa7bsKwL-8&redirect=false">GET /api/stream</option>
+              <option value="/api/lyrics?title=Die+With+A+Smile&artist=Lady+Gaga&duration=251">GET /api/lyrics</option>
+              <option value="/api/spotify?url=https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M&limit=5&match=true">GET /api/spotify</option>
+              <option value="/api/next?id=kPa7bsKwL-8">GET /api/next</option>
+              <option value="/api/playlist?id=RDAMVMkPa7bsKwL-8">GET /api/playlist</option>
+              <option value="/api/health">GET /api/health</option>
+            </select>
+            <input type="text" id="tester-url-input" class="form-input" value="/api/search?q=Die+With+A+Smile&limit=5">
+            <button id="tester-btn-send" class="btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              <span>Send Request</span>
             </button>
           </div>
-        </div>
-        <div style="margin-top:16px;">
-          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Sample Public Playlists</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="chip-btn spotify-sample-btn" data-url="https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M">Top Hits</button>
-            <button class="chip-btn spotify-sample-btn" data-url="https://open.spotify.com/playlist/37i9dQZF1DX0XUsuxWHRQd">RapCaviar</button>
-            <button class="chip-btn spotify-sample-btn" data-url="https://open.spotify.com/playlist/37i9dQZF1DX4WYpdgoIcn6">Chill Hits</button>
-            <button class="chip-btn spotify-sample-btn" data-url="https://open.spotify.com/playlist/46cvrlVoAXy9EaYaNDe2nR">Party Hits</button>
+
+          <div class="tester-response-bar">
+            <div>
+              <span>Status: </span>
+              <span id="tester-status" class="tester-status-val">Ready</span>
+            </div>
+            <div>
+              <span>Latency: </span>
+              <span id="tester-latency" class="tester-latency-val">0 ms</span>
+            </div>
+          </div>
+          <div class="code-container" style="margin-top: 0; border-top-left-radius: 0; border-top-right-radius: 0;">
+            <div class="code-header">
+              <span class="code-lang-label">Response JSON</span>
+              <button class="copy-btn" id="tester-copy-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span>Copy</span>
+              </button>
+            </div>
+            <div id="tester-output-wrapper" class="tester-output-wrapper collapsed">
+              <pre class="code-content" id="tester-output">Click "Send Request" to test endpoint live...</pre>
+              <div id="tester-fade" class="tester-fade"></div>
+            </div>
+            <div id="tester-expand-bar" class="tester-expand-bar" style="display:none;">
+              <button id="tester-toggle-expand" class="btn-expand-more">
+                <span id="tester-expand-text">Lihat selengkapnya...</span>
+                <svg id="tester-expand-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
+      </section>
 
-  <audio id="audio-engine" preload="metadata"></audio>
-  <div id="yt-player-container" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;pointer-events:none;"></div>
+      <section id="architecture" class="doc-section">
+        <h2 class="section-title">Architecture & Specifications</h2>
+        <p class="section-desc">
+          Built according to senior zero-dependency engineering standards. The system avoids third-party scraper bloat, utilizing native Node.js and lightweight InnerTube client wrappers for deterministic performance.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0;">
+          <div class="card" style="margin: 0;">
+            <div class="card-body">
+              <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px;">Zero-Dependency Core</h3>
+              <p style="font-size: 0.86rem; color: var(--text-muted);">
+                Runs natively on Node.js 20+ runtime using standard <code style="font-family:var(--mono);">fetch</code>, <code style="font-family:var(--mono);">AbortSignal</code>, and streaming buffers. Zero heavy external binaries.
+              </p>
+            </div>
+          </div>
+
+          <div class="card" style="margin: 0;">
+            <div class="card-body">
+              <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px;">Multi-Source Synced Lyrics</h3>
+              <p style="font-size: 0.86rem; color: var(--text-muted);">
+                Cascading synchronization engine querying LRCLIB and Kugou with millisecond precision, studio time tags, and custom timing offset calibration.
+              </p>
+            </div>
+          </div>
+
+          <div class="card" style="margin: 0;">
+            <div class="card-body">
+              <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px;">Direct CDN Audio Redirect</h3>
+              <p style="font-size: 0.86rem; color: var(--text-muted);">
+                Resolves raw Google Video audio CDN streams with HTTP 302 redirection or direct URL extraction, enabling native hardware seek on mobile players.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="endpoint-search" class="doc-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="endpoint-badge-row">
+              <span class="method-tag get">GET</span>
+              <span class="endpoint-path">/api/search</span>
+            </div>
+            <span style="font-size:0.8rem;color:var(--text-muted);">Search Catalog</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+              Searches songs, albums, and artists on YouTube Music with high-resolution thumbnails, duration metadata, and clean ID payloads.
+            </p>
+
+            <div class="param-table-wrap">
+              <table class="param-table">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Default</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="param-name">q</td>
+                    <td class="param-type">string</td>
+                    <td><span class="param-required">Required</span></td>
+                    <td>-</td>
+                    <td>Query string (track name, artist, or album)</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">limit</td>
+                    <td class="param-type">number</td>
+                    <td><span class="param-optional">Optional</span></td>
+                    <td>15</td>
+                    <td>Maximum items returned (1 to 30)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-lang-label">cURL</span>
+                <button class="copy-btn" onclick="copySnippet(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <pre class="code-content">curl -X GET "https://&lt;your-domain&gt;/api/search?q=Die+With+A+Smile&amp;limit=5"</pre>
+            </div>
+
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-lang-label">Response 200 OK</span>
+                <button class="copy-btn" onclick="copySnippet(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <pre class="code-content">{
+  "status": "success",
+  "query": "Die With A Smile",
+  "results": [
+    {
+      "id": "kPa7bsKwL-8",
+      "title": "Die With A Smile",
+      "artists": [{ "name": "Lady Gaga", "id": "UC0WP5P-ufpRfjbNrmOWwLBQ" }],
+      "album": "Die With A Smile",
+      "duration": "4:11",
+      "durationSeconds": 251,
+      "thumbnailUrl": "https://lh3.googleusercontent.com/..."
+    }
+  ]
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="endpoint-song" class="doc-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="endpoint-badge-row">
+              <span class="method-tag get">GET</span>
+              <span class="endpoint-path">/api/song</span>
+            </div>
+            <span style="font-size:0.8rem;color:var(--text-muted);">Song Details</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+              Fetches comprehensive track metadata including canonical duration in seconds, high-resolution thumbnail set, and artist details.
+            </p>
+
+            <div class="param-table-wrap">
+              <table class="param-table">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Default</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="param-name">id</td>
+                    <td class="param-type">string</td>
+                    <td><span class="param-required">Required</span></td>
+                    <td>-</td>
+                    <td>YouTube video identifier (e.g. kPa7bsKwL-8)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-lang-label">cURL</span>
+                <button class="copy-btn" onclick="copySnippet(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <pre class="code-content">curl -X GET "https://&lt;your-domain&gt;/api/song?id=kPa7bsKwL-8"</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="endpoint-stream" class="doc-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="endpoint-badge-row">
+              <span class="method-tag get">GET</span>
+              <span class="endpoint-path">/api/stream</span>
+            </div>
+            <span style="font-size:0.8rem;color:var(--text-muted);">Audio Stream &amp; Seek</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+              Resolves the best available audio stream from Google Video CDN. By default, responds with HTTP 302 Found redirecting directly to the high-bitrate audio buffer. Supports seeking via the <code style="font-family:var(--mono);">start</code> parameter.
+            </p>
+
+            <div class="param-table-wrap">
+              <table class="param-table">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Default</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="param-name">id</td>
+                    <td class="param-type">string</td>
+                    <td><span class="param-required">Required</span></td>
+                    <td>-</td>
+                    <td>YouTube video identifier</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">start</td>
+                    <td class="param-type">number</td>
+                    <td><span class="param-optional">Optional</span></td>
+                    <td>0</td>
+                    <td>Initial playback seek position in seconds</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">redirect</td>
+                    <td class="param-type">boolean</td>
+                    <td><span class="param-optional">Optional</span></td>
+                    <td>true</td>
+                    <td>Set <code style="font-family:var(--mono);">false</code> to return JSON payload with direct stream URL</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-lang-label">Direct Stream Playback</span>
+                <button class="copy-btn" onclick="copySnippet(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <pre class="code-content">https://&lt;your-domain&gt;/api/stream?id=kPa7bsKwL-8&amp;start=30</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="endpoint-lyrics" class="doc-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="endpoint-badge-row">
+              <span class="method-tag get">GET</span>
+              <span class="endpoint-path">/api/lyrics</span>
+            </div>
+            <span style="font-size:0.8rem;color:var(--text-muted);">Synced Karaoke Lyrics</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+              Multi-source synchronized lyrics provider. Combines LRCLIB and Kugou catalogs with fallback to plain lyrics. Supports timing calibration via <code style="font-family:var(--mono);">offset</code>.
+            </p>
+
+            <div class="param-table-wrap">
+              <table class="param-table">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Default</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="param-name">title</td>
+                    <td class="param-type">string</td>
+                    <td><span class="param-required">Required</span></td>
+                    <td>-</td>
+                    <td>Track title</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">artist</td>
+                    <td class="param-type">string</td>
+                    <td><span class="param-optional">Optional</span></td>
+                    <td>-</td>
+                    <td>Artist name for accurate match</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">duration</td>
+                    <td class="param-type">number</td>
+                    <td><span class="param-optional">Optional</span></td>
+                    <td>-</td>
+                    <td>Song duration in seconds for LRCLIB verification</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">offset</td>
+                    <td class="param-type">number</td>
+                    <td><span class="param-optional">Optional</span></td>
+                    <td>0</td>
+                    <td>Timing offset in seconds (e.g. -0.5 or 1.2)</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">format</td>
+                    <td class="param-type">string</td>
+                    <td><span class="param-optional">Optional</span></td>
+                    <td>json</td>
+                    <td>Output format: <code style="font-family:var(--mono);">json</code> or <code style="font-family:var(--mono);">lrc</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-lang-label">Response JSON</span>
+                <button class="copy-btn" onclick="copySnippet(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <pre class="code-content">{
+  "status": "success",
+  "source": "lrclib",
+  "isSynced": true,
+  "syncedLyrics": [
+    { "time": 14.28, "text": "(Ooh, ooh)" },
+    { "time": 19.82, "text": "I, I just woke up from a dream" },
+    { "time": 25.14, "text": "Where you and I had to say goodbye" }
+  ],
+  "plainLyrics": "..."
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="endpoint-spotify" class="doc-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="endpoint-badge-row">
+              <span class="method-tag get">GET</span>
+              <span class="endpoint-path">/api/spotify</span>
+            </div>
+            <span style="font-size:0.8rem;color:var(--text-muted);">Spotify Import</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+              Zero-token public Spotify playlist importer. Extracts track title, artists, album, and duration from Spotify embed HTML, then automatically maps tracks to streamable YouTube Music video IDs.
+            </p>
+
+            <div class="param-table-wrap">
+              <table class="param-table">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Default</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="param-name">url</td>
+                    <td class="param-type">string</td>
+                    <td><span class="param-required">Required</span></td>
+                    <td>-</td>
+                    <td>Public Spotify playlist link (open.spotify.com/playlist/...)</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">match</td>
+                    <td class="param-type">boolean</td>
+                    <td><span class="param-optional">Optional</span></td>
+                    <td>true</td>
+                    <td>Auto-resolve each track to a YouTube Music streamable ID</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">limit</td>
+                    <td class="param-type">number</td>
+                    <td><span class="param-optional">Optional</span></td>
+                    <td>50</td>
+                    <td>Maximum tracks to import and resolve (1 to 100)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-lang-label">Response JSON</span>
+                <button class="copy-btn" onclick="copySnippet(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <pre class="code-content">{
+  "status": "success",
+  "playlist": {
+    "id": "37i9dQZF1DXcBWIGoYBM5M",
+    "title": "Today's Top Hits",
+    "trackCount": 5,
+    "tracks": [
+      {
+        "id": "kPa7bsKwL-8",
+        "title": "Die With A Smile",
+        "artist": "Lady Gaga, Bruno Mars",
+        "duration": "4:11",
+        "durationSeconds": 251,
+        "matched": true,
+        "youtubeId": "kPa7bsKwL-8"
+      }
+    ]
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="endpoint-next" class="doc-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="endpoint-badge-row">
+              <span class="method-tag get">GET</span>
+              <span class="endpoint-path">/api/next</span>
+            </div>
+            <span style="font-size:0.8rem;color:var(--text-muted);">Radio Queue</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+              Fetches YouTube Music's radio stream and infinite queue recommendations given a seed video ID.
+            </p>
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-lang-label">cURL</span>
+                <button class="copy-btn" onclick="copySnippet(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <pre class="code-content">curl -X GET "https://&lt;your-domain&gt;/api/next?id=kPa7bsKwL-8"</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="endpoint-playlist" class="doc-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="endpoint-badge-row">
+              <span class="method-tag get">GET</span>
+              <span class="endpoint-path">/api/playlist</span>
+            </div>
+            <span style="font-size:0.8rem;color:var(--text-muted);">Playlist Parser</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+              Retrieves song list and metadata from any public YouTube Music album or playlist ID.
+            </p>
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-lang-label">cURL</span>
+                <button class="copy-btn" onclick="copySnippet(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <pre class="code-content">curl -X GET "https://&lt;your-domain&gt;/api/playlist?id=RDAMVMkPa7bsKwL-8"</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="endpoint-health" class="doc-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="endpoint-badge-row">
+              <span class="method-tag get">GET</span>
+              <span class="endpoint-path">/api/health</span>
+            </div>
+            <span style="font-size:0.8rem;color:var(--text-muted);">Health Check</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+              Service health check returning uptime in seconds, system memory footprint, and Node.js runtime version.
+            </p>
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-lang-label">Response JSON</span>
+                <button class="copy-btn" onclick="copySnippet(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <pre class="code-content">{
+  "status": "ok",
+  "timestamp": 1728444000000,
+  "uptime": 1284.52,
+  "nodeVersion": "v24.21.0",
+  "memoryUsage": { "rss": 42100000, "heapUsed": 18500000 }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="vercel-deploy" class="doc-section">
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 22 22 22"></polygon></svg>
+          <span>Deploying to Vercel via Vercel CLI</span>
+        </h2>
+        <p class="section-desc">
+          Step-by-step instructions for deploying this project into Vercel Serverless environment using the official CLI.
+        </p>
+
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Install Vercel CLI</div>
+              <div class="step-text">Install the CLI globally or run it via npx:</div>
+              <div class="code-container" style="margin: 8px 0;">
+                <div class="code-header">
+                  <span class="code-lang-label">Terminal</span>
+                  <button class="copy-btn" onclick="copySnippet(this)"><span>Copy</span></button>
+                </div>
+                <pre class="code-content">npm install -g vercel</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Authenticate Your Account</div>
+              <div class="step-text">Login to your Vercel account:</div>
+              <div class="code-container" style="margin: 8px 0;">
+                <div class="code-header">
+                  <span class="code-lang-label">Terminal</span>
+                  <button class="copy-btn" onclick="copySnippet(this)"><span>Copy</span></button>
+                </div>
+                <pre class="code-content">vercel login</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Deploy Production Instance</div>
+              <div class="step-text">From the repository root, execute the production deployment command:</div>
+              <div class="code-container" style="margin: 8px 0;">
+                <div class="code-header">
+                  <span class="code-lang-label">Terminal</span>
+                  <button class="copy-btn" onclick="copySnippet(this)"><span>Copy</span></button>
+                </div>
+                <pre class="code-content">vercel --prod --yes</pre>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+                Vercel compiles the TypeScript serverless functions in <code style="font-family:var(--mono);">api/</code> automatically and serves <code style="font-family:var(--mono);">public/</code> as static assets at the root URL.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="serverless-config" class="doc-section">
+        <h2 class="section-title">Vercel Configuration (vercel.json)</h2>
+        <p class="section-desc">
+          The verified configuration handling CORS headers, clean URLs, and serverless routing:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang-label">vercel.json</span>
+            <button class="copy-btn" onclick="copySnippet(this)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy</span>
+            </button>
+          </div>
+          <pre class="code-content">{
+  "version": 2,
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, HEAD, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/docs", "destination": "/docs.html" },
+    { "source": "/api", "destination": "/api/index" },
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ]
+}</pre>
+        </div>
+      </section>
+
+      <section id="client-integration" class="doc-section">
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          <span>Mobile APK &amp; Client Integration Guide</span>
+        </h2>
+        <p class="section-desc">
+          How to wire this API to an Android APK (Java/Kotlin), Flutter, or React Native music app.
+        </p>
+
+        <div class="card">
+          <div class="card-body">
+            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">Standard Playback Lifecycle</h3>
+            <ol style="margin-left: 20px; font-size: 0.9rem; color: var(--text-muted); line-height: 1.8;">
+              <li><strong>Catalog Search:</strong> Query <code style="font-family:var(--mono);">/api/search?q={query}</code> and display tracks in a RecyclerView or ListView.</li>
+              <li><strong>Audio Source:</strong> Pass <code style="font-family:var(--mono);">https://&lt;api&gt;/api/stream?id={trackId}</code> directly to ExoPlayer or <code style="font-family:var(--mono);">just_audio</code>. The endpoint automatically follows the 302 redirect to the audio stream.</li>
+              <li><strong>Seek Synchronization:</strong> When the user drags the timeline seek bar, call native player seek or query <code style="font-family:var(--mono);">/api/stream?id={trackId}&amp;start={seconds}</code>.</li>
+              <li><strong>Karaoke Lyrics:</strong> Concurrently fetch <code style="font-family:var(--mono);">/api/lyrics?title={title}&amp;artist={artist}&amp;duration={durationSeconds}</code>. Loop over <code style="font-family:var(--mono);">syncedLyrics</code> and highlight the line where <code style="font-family:var(--mono);">playerPosition >= item.time</code>.</li>
+              <li><strong>Autoplay Next:</strong> When the track finishes, query <code style="font-family:var(--mono);">/api/next?id={trackId}</code> to continuously queue related tracks.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section id="code-snippets" class="doc-section">
+        <h2 class="section-title">Code Snippets</h2>
+        <p class="section-desc">Quick implementations across Flutter, JavaScript, and Python.</p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang-label">Flutter (Dart)</span>
+            <button class="copy-btn" onclick="copySnippet(this)"><span>Copy</span></button>
+          </div>
+          <pre class="code-content">import 'package:http/http.dart' as http;
+import 'package:just_audio/just_audio.dart';
+import 'dart:convert';
+
+class MusicService {
+  final String baseUrl = "https://&lt;your-deployment&gt;.vercel.app";
+  final AudioPlayer _player = AudioPlayer();
+
+  Future&lt;List&lt;dynamic&gt;&gt; search(String query) async {
+    final res = await http.get(Uri.parse('$baseUrl/api/search?q=${Uri.encodeComponent(query)}'));
+    final data = jsonDecode(res.body);
+    return data['results'];
+  }
+
+  Future&lt;void&gt; playTrack(String videoId) async {
+    final streamUrl = '$baseUrl/api/stream?id=$videoId';
+    await _player.setUrl(streamUrl);
+    _player.play();
+  }
+}</pre>
+        </div>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang-label">TypeScript / JavaScript (Fetch)</span>
+            <button class="copy-btn" onclick="copySnippet(this)"><span>Copy</span></button>
+          </div>
+          <pre class="code-content">const BASE_URL = "https://&lt;your-deployment&gt;.vercel.app";
+
+async function searchAndPlay(query: string) {
+  const searchRes = await fetch(`${BASE_URL}/api/search?q=${encodeURIComponent(query)}&limit=1`);
+  const { results } = await searchRes.json();
+  if (!results.length) return;
+
+  const track = results[0];
+  const audio = new Audio(`${BASE_URL}/api/stream?id=${track.id}`);
+  await audio.play();
+
+  const lyricsRes = await fetch(
+    `${BASE_URL}/api/lyrics?title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artists[0]?.name || '')}&duration=${track.durationSeconds}`
+  );
+  const lyricsData = await lyricsRes.json();
+  return { track, lyrics: lyricsData };
+}</pre>
+        </div>
+      </section>
+
+      <footer>
+        <div>
+          <span>YTMusic Player &amp; API &middot; MIT License</span>
+        </div>
+        <div>
+          <span>Vercel Serverless Production Ready</span>
+        </div>
+      </footer>
+    </main>
+  </div>
 
   <script>
-    const searchInput = document.getElementById('main-search-input');
-    const clearSearchBtn = document.getElementById('clear-search-btn');
-    const trackTable = document.getElementById('track-table');
-    const viewTitle = document.getElementById('view-title');
-    const viewSubtitle = document.getElementById('view-subtitle');
+    function copySnippet(btn) {
+      const codeBlock = btn.closest('.code-container').querySelector('.code-content');
+      if (!codeBlock) return;
+      navigator.clipboard.writeText(codeBlock.textContent.trim()).then(() => {
+        const origText = btn.querySelector('span').textContent;
+        btn.querySelector('span').textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.querySelector('span').textContent = origText;
+          btn.classList.remove('copied');
+        }, 1800);
+      });
+    }
 
-    const heroTitle = document.getElementById('hero-song-title');
-    const heroMeta = document.getElementById('hero-song-meta');
-    const heroCover = document.getElementById('hero-cover-img');
-    const heroPlayBtn = document.getElementById('hero-play-btn');
+    const testerSelect = document.getElementById('tester-select');
+    const testerUrlInput = document.getElementById('tester-url-input');
+    const testerBtnSend = document.getElementById('tester-btn-send');
+    const testerStatus = document.getElementById('tester-status');
+    const testerLatency = document.getElementById('tester-latency');
+    const testerOutput = document.getElementById('tester-output');
+    const testerCopyBtn = document.getElementById('tester-copy-btn');
+    const testerOutputWrapper = document.getElementById('tester-output-wrapper');
+    const testerExpandBar = document.getElementById('tester-expand-bar');
+    const testerToggleExpand = document.getElementById('tester-toggle-expand');
+    const testerExpandText = document.getElementById('tester-expand-text');
+    const testerExpandIcon = document.getElementById('tester-expand-icon');
+    let isTesterExpanded = false;
 
-    const lyricsStream = document.getElementById('lyrics-stream');
-    const lyricsBadge = document.getElementById('lyrics-badge');
-    const radioQueueList = document.getElementById('radio-queue-list');
-
-    const dockThumb = document.getElementById('dock-thumb-img');
-    const dockTitle = document.getElementById('dock-title-text');
-    const dockArtist = document.getElementById('dock-artist-text');
-    const dockBtnPlay = document.getElementById('dock-btn-play');
-    const dockIconPlay = document.getElementById('dock-icon-play');
-    const dockIconPause = document.getElementById('dock-icon-pause');
-    const dockBtnPrev = document.getElementById('dock-btn-prev');
-    const dockBtnNext = document.getElementById('dock-btn-next');
-    const dockBtnRewind = document.getElementById('dock-btn-rewind');
-    const dockBtnForward = document.getElementById('dock-btn-forward');
-    const dockBtnShuffle = document.getElementById('dock-btn-shuffle');
-    const dockBtnRepeat = document.getElementById('dock-btn-repeat');
-    const dockSeekBar = document.getElementById('dock-seek-bar');
-    const dockCurrTime = document.getElementById('dock-curr-time');
-    const dockDurTime = document.getElementById('dock-dur-time');
-    const dockVolBar = document.getElementById('dock-vol-bar');
-    const dockBtnMute = document.getElementById('btn-dock-mute');
-
-    const metricLatency = document.getElementById('metric-latency');
-    const metricStreams = document.getElementById('metric-streams');
-
-    const inspectorOverlay = document.getElementById('inspector-overlay');
-    const toggleInspectorBtn = document.getElementById('btn-toggle-inspector');
-    const closeInspectorBtn = document.getElementById('close-inspector-btn');
-
-    const audioEngine = document.getElementById('audio-engine');
-    let ytPlayer = null;
-    let ytPlayerReady = false;
-
-    function initYtPlayer() {
-      if (window.YT && window.YT.Player && !ytPlayer) {
-        ytPlayer = new YT.Player('yt-player-container', {
-          height: '1',
-          width: '1',
-          playerVars: {
-            autoplay: 1,
-            controls: 0,
-            disablekb: 1,
-            fs: 0,
-            modestbranding: 1,
-            playsinline: 1
-          },
-          events: {
-            onReady: () => {
-              ytPlayerReady = true;
-            },
-            onStateChange: (event) => {
-              if (event.data === YT.PlayerState.PLAYING) {
-                setPlayState(true);
-              } else if (event.data === YT.PlayerState.PAUSED) {
-                setPlayState(false);
-              } else if (event.data === YT.PlayerState.ENDED) {
-                handleTrackFinish();
-              }
-            }
+    function refreshExpandButton() {
+      requestAnimationFrame(() => {
+        if (testerOutput.scrollHeight > 240) {
+          testerExpandBar.style.display = 'flex';
+          if (!isTesterExpanded) {
+            testerOutputWrapper.classList.add('collapsed');
+            testerOutputWrapper.classList.remove('expanded');
+            testerExpandText.textContent = 'Lihat selengkapnya...';
+            testerExpandIcon.style.transform = 'rotate(0deg)';
           }
-        });
+        } else {
+          testerExpandBar.style.display = 'none';
+          testerOutputWrapper.classList.remove('collapsed');
+          testerOutputWrapper.classList.add('expanded');
+        }
+      });
+    }
+
+    testerToggleExpand.addEventListener('click', () => {
+      isTesterExpanded = !isTesterExpanded;
+      if (isTesterExpanded) {
+        testerOutputWrapper.classList.remove('collapsed');
+        testerOutputWrapper.classList.add('expanded');
+        testerExpandText.textContent = 'Ciutkan';
+        testerExpandIcon.style.transform = 'rotate(180deg)';
+      } else {
+        testerOutputWrapper.classList.add('collapsed');
+        testerOutputWrapper.classList.remove('expanded');
+        testerExpandText.textContent = 'Lihat selengkapnya...';
+        testerExpandIcon.style.transform = 'rotate(0deg)';
       }
-    }
-    window.onYouTubeIframeAPIReady = initYtPlayer;
-    if (window.YT && window.YT.Player) {
-      initYtPlayer();
-    }
-
-    let currentPlaylist = [];
-    let currentTrack = null;
-    let currentTrackIdx = -1;
-    let syncedLyrics = [];
-    let isIframeMode = false;
-    let isShuffle = false;
-    let isRepeat = false;
-    let searchDebounceTimer = null;
-
-    toggleInspectorBtn.addEventListener('click', () => inspectorOverlay.classList.add('open'));
-    closeInspectorBtn.addEventListener('click', () => inspectorOverlay.classList.remove('open'));
-    inspectorOverlay.addEventListener('click', (e) => {
-      if (e.target === inspectorOverlay) inspectorOverlay.classList.remove('open');
     });
 
-    const spotifyOverlay = document.getElementById('spotify-overlay');
-    const btnOpenSpotify = document.getElementById('btn-open-spotify');
-    const sidebarBtnSpotify = document.getElementById('sidebar-btn-spotify');
-    const closeSpotifyBtn = document.getElementById('close-spotify-btn');
-    const spotifyInputUrl = document.getElementById('spotify-input-url');
-    const spotifyImportStatus = document.getElementById('spotify-import-status');
-    const btnDoSpotifyImport = document.getElementById('btn-do-spotify-import');
+    testerSelect.addEventListener('change', () => {
+      testerUrlInput.value = testerSelect.value;
+    });
 
-    if (btnOpenSpotify) btnOpenSpotify.addEventListener('click', () => spotifyOverlay.classList.add('open'));
-    if (sidebarBtnSpotify) sidebarBtnSpotify.addEventListener('click', () => spotifyOverlay.classList.add('open'));
-    if (closeSpotifyBtn) closeSpotifyBtn.addEventListener('click', () => spotifyOverlay.classList.remove('open'));
-    if (spotifyOverlay) {
-      spotifyOverlay.addEventListener('click', (e) => {
-        if (e.target === spotifyOverlay) spotifyOverlay.classList.remove('open');
-      });
-    }
-
-    document.querySelectorAll('.spotify-sample-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        spotifyInputUrl.value = btn.dataset.url;
+    testerCopyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(testerOutput.textContent.trim()).then(() => {
+        testerCopyBtn.querySelector('span').textContent = 'Copied!';
+        setTimeout(() => {
+          testerCopyBtn.querySelector('span').textContent = 'Copy';
+        }, 1800);
       });
     });
 
-    if (btnDoSpotifyImport) {
-      btnDoSpotifyImport.addEventListener('click', async () => {
-        const val = spotifyInputUrl.value.trim();
-        if (!val) {
-          spotifyImportStatus.textContent = 'Please enter a Spotify playlist link.';
-          return;
-        }
+    async function executeLiveTest() {
+      const path = testerUrlInput.value.trim();
+      if (!path) return;
 
-        spotifyImportStatus.textContent = 'Importing playlist from Spotify...';
-        btnDoSpotifyImport.disabled = true;
+      isTesterExpanded = false;
+      testerExpandBar.style.display = 'none';
+      testerOutputWrapper.classList.remove('collapsed');
+      testerOutputWrapper.classList.add('expanded');
 
-        try {
-          const res = await fetch(`/api/spotify?url=${encodeURIComponent(val)}&match=true&limit=5`);
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || 'Failed to import Spotify playlist');
-          }
-
-          const data = await res.json();
-          spotifyOverlay.classList.remove('open');
-          spotifyImportStatus.textContent = '';
-          btnDoSpotifyImport.disabled = false;
-
-          viewTitle.textContent = data.title;
-          viewSubtitle.textContent = `${data.trackCount} tracks imported from Spotify (curated by ${data.author})`;
-
-          const convertedPlaylist = (data.tracks || []).map(item => {
-            if (item.matchedTrack) {
-              return item.matchedTrack;
-            }
-            return {
-              id: 'spotify_' + Math.random().toString(36).slice(2, 9),
-              title: item.title,
-              artists: [{ name: item.artist }],
-              album: { name: data.title },
-              duration: item.duration,
-              durationSeconds: item.durationSeconds,
-              thumbnailUrl: data.coverUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="120" height="120"%3E%3Crect width="120" height="120" fill="%2318181c"/%3E%3C/svg%3E',
-              type: 'song',
-              isExplicit: item.isExplicit,
-              isSpotifyUnresolved: true,
-              searchQuery: `${item.title} ${item.artist}`
-            };
-          });
-
-          currentPlaylist = convertedPlaylist;
-          renderTrackTable(convertedPlaylist);
-
-          if (convertedPlaylist.length > 0) {
-            updateHeroFeatured(convertedPlaylist[0]);
-            playSelectedTrack(convertedPlaylist[0], 0);
-          }
-        } catch (err) {
-          spotifyImportStatus.textContent = err.message || 'Error importing playlist';
-          btnDoSpotifyImport.disabled = false;
-        }
-      });
-    }
-
-
-    searchInput.addEventListener('input', () => {
-      clearSearchBtn.style.display = searchInput.value ? 'block' : 'none';
-      clearTimeout(searchDebounceTimer);
-      searchDebounceTimer = setTimeout(() => {
-        if (searchInput.value.trim().length > 1) {
-          performSearch(searchInput.value.trim());
-        }
-      }, 400);
-    });
-
-    clearSearchBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      clearSearchBtn.style.display = 'none';
-      searchInput.focus();
-    });
-
-    document.querySelectorAll('.chip-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        searchInput.value = btn.dataset.query;
-        clearSearchBtn.style.display = 'block';
-        performSearch(btn.dataset.query);
-      });
-    });
-
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const view = btn.dataset.view;
-        if (view === 'discover') {
-          performSearch('Top Global Hits 2026', 'Trending Discover');
-        } else if (view === 'charts') {
-          performSearch('Billboard Hot 100 2026', 'Billboard Top Hits');
-        } else if (view === 'radio') {
-          if (currentTrack) {
-            loadUpNext(currentTrack.id);
-          } else {
-            performSearch('Chill Radio Beats', 'Radio Stations');
-          }
-        }
-      });
-    });
-
-    async function performSearch(query, customTitle) {
-      viewTitle.textContent = customTitle || `Results for "${query}"`;
-      viewSubtitle.textContent = 'Fetching from YouTube Music InnerTube...';
-      trackTable.innerHTML = '<div style="padding:24px;color:var(--text-dim);text-align:center;">Searching catalog...</div>';
-
+      testerStatus.textContent = 'Sending...';
+      testerStatus.style.color = '#38bdf8';
+      testerOutput.textContent = 'Executing request...';
       const startTime = performance.now();
 
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=songs`);
+        const res = await fetch(path);
         const duration = Math.round(performance.now() - startTime);
-        metricLatency.textContent = `${duration} ms`;
+        testerLatency.textContent = duration + ' ms';
+        testerStatus.textContent = res.status + ' ' + res.statusText;
+        testerStatus.style.color = res.ok ? '#16a34a' : '#dc2626';
 
-        if (!res.ok) throw new Error('Search failed');
-        const data = await res.json();
-        const results = data.results || [];
-
-        viewSubtitle.textContent = `${results.length} tracks found in ${duration}ms`;
-        currentPlaylist = results;
-        renderTrackTable(results);
-
-        if (results.length > 0 && (!currentTrack || customTitle)) {
-          updateHeroFeatured(results[0]);
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const json = await res.json();
+          testerOutput.textContent = JSON.stringify(json, null, 2);
+        } else {
+          const text = await res.text();
+          testerOutput.textContent = text.slice(0, 1000);
         }
-      } catch {
-        trackTable.innerHTML = '<div style="padding:24px;color:var(--text-dim);text-align:center;">Failed to fetch songs. Check connection.</div>';
+        refreshExpandButton();
+      } catch (err) {
+        const duration = Math.round(performance.now() - startTime);
+        testerLatency.textContent = duration + ' ms';
+        testerStatus.textContent = 'Network Error';
+        testerStatus.style.color = '#dc2626';
+        testerOutput.textContent = String(err);
+        refreshExpandButton();
       }
     }
 
-    function updateHeroFeatured(track) {
-      heroTitle.textContent = track.title;
-      heroMeta.textContent = `${track.artists.map(a => a.name).join(', ')} • ${track.duration}`;
-      heroCover.src = track.thumbnailUrl;
-      heroPlayBtn.onclick = () => playSelectedTrack(track, 0);
-    }
+    testerBtnSend.addEventListener('click', executeLiveTest);
 
-    function renderTrackTable(tracks) {
-      if (!tracks.length) {
-        trackTable.innerHTML = '<div style="padding:24px;color:var(--text-dim);text-align:center;">No songs matched your query.</div>';
-        return;
-      }
-
-      trackTable.innerHTML = tracks.map((t, idx) => `
-        <div class="track-row" data-index="${idx}">
-          <div class="track-index">${idx + 1}</div>
-          <img class="track-thumb-img" src="${t.thumbnailUrl}" alt="${t.title}" loading="lazy">
-          <div class="track-details">
-            <div class="track-name">${t.title}</div>
-            <div class="track-artist">${t.artists.map(a => a.name).join(', ')}</div>
-          </div>
-          <div class="track-album">${t.album ? t.album.name : '--'}</div>
-          <div class="track-time">${t.duration}</div>
-          <button class="track-action-btn" title="Play Track">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          </button>
-        </div>
-      `).join('');
-
-      trackTable.querySelectorAll('.track-row').forEach(row => {
-        row.addEventListener('click', () => {
-          const idx = parseInt(row.dataset.index, 10);
-          playSelectedTrack(currentPlaylist[idx], idx);
-        });
-      });
-    }
-
-    async function playSelectedTrack(track, idx) {
-      if (!track) return;
-
-      if (track.isSpotifyUnresolved) {
-        metricStreams.textContent = 'Resolving track...';
-        try {
-          const q = track.searchQuery || `${track.title} ${track.artists.map(a => a.name).join(' ')}`;
-          const sRes = await fetch(`/api/search?q=${encodeURIComponent(q)}&type=songs`);
-          const sData = await sRes.json();
-          if (sData.results && sData.results.length > 0) {
-            const resolved = sData.results[0];
-            currentPlaylist[idx] = resolved;
-            track = resolved;
-          }
-        } catch {
-        }
-      }
-
-      currentTrack = track;
-      currentTrackIdx = idx;
-
-      document.querySelectorAll('.track-row').forEach(row => {
-        const isCurrent = parseInt(row.dataset.index, 10) === idx;
-        row.classList.toggle('active', isCurrent);
-      });
-
-      dockThumb.src = track.thumbnailUrl;
-      dockTitle.textContent = track.title;
-      dockArtist.textContent = track.artists.map(a => a.name).join(', ');
-      dockDurTime.textContent = track.duration || '0:00';
-      dockSeekBar.value = 0;
-
-      updateHeroFeatured(track);
-
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: track.title,
-          artist: track.artists.map(a => a.name).join(', '),
-          album: track.album ? track.album.name : '',
-          artwork: [{ src: track.thumbnailUrl, sizes: '512x512', type: 'image/jpeg' }]
-        });
-      }
-
-      fetchLyrics(track);
-      loadUpNext(track.id);
-
-      audioEngine.pause();
-      if (ytPlayer && typeof ytPlayer.stopVideo === 'function') {
-        ytPlayer.stopVideo();
-      }
-      isIframeMode = false;
-
-      metricStreams.textContent = 'Resolving...';
+    async function checkHealthStatus() {
       try {
-        const streamRes = await fetch(`/api/stream?id=${track.id}`);
-        const streamData = await streamRes.json();
-        if (streamData.bestAudio && streamData.bestAudio.url) {
-          audioEngine.src = streamData.bestAudio.url;
-          metricStreams.textContent = 'Direct 302 CDN';
-          await audioEngine.play();
-          setPlayState(true);
-        } else {
-          startIframeFallback(track.id);
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const badge = document.getElementById('global-status-badge');
+          const text = document.getElementById('global-status-text');
+          badge.style.borderColor = '#bbf7d0';
+          badge.style.color = '#16a34a';
+          text.textContent = 'Server Online';
         }
       } catch {
-        startIframeFallback(track.id);
+        const badge = document.getElementById('global-status-badge');
+        const text = document.getElementById('global-status-text');
+        badge.style.borderColor = '#fed7aa';
+        badge.style.color = '#ea580c';
+        text.textContent = 'Server Checking';
       }
     }
 
-    function startIframeFallback(videoId) {
-      metricStreams.textContent = 'YouTube Audio Engine';
-      isIframeMode = true;
-      setPlayState(true);
+    checkHealthStatus();
 
-      if (ytPlayer && ytPlayerReady && typeof ytPlayer.loadVideoById === 'function') {
-        ytPlayer.loadVideoById(videoId);
-        ytPlayer.playVideo();
-      } else {
-        const checkReady = setInterval(() => {
-          if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
-            clearInterval(checkReady);
-            ytPlayer.loadVideoById(videoId);
-            ytPlayer.playVideo();
-          }
-        }, 200);
-      }
-    }
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.doc-sidebar .sidebar-link');
 
-    function setPlayState(isPlaying) {
-      dockIconPlay.style.display = isPlaying ? 'none' : 'block';
-      dockIconPause.style.display = isPlaying ? 'block' : 'none';
-    }
-
-    dockBtnPlay.addEventListener('click', () => {
-      if (!currentTrack) {
-        if (currentPlaylist.length > 0) playSelectedTrack(currentPlaylist[0], 0);
-        return;
-      }
-
-      if (isIframeMode && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
-        const state = ytPlayer.getPlayerState();
-        if (state === 1) {
-          ytPlayer.pauseVideo();
-          setPlayState(false);
-        } else {
-          ytPlayer.playVideo();
-          setPlayState(true);
+    window.addEventListener('scroll', () => {
+      let currentId = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 120;
+        if (window.scrollY >= sectionTop) {
+          currentId = section.getAttribute('id');
         }
-      } else if (!isIframeMode) {
-        if (audioEngine.paused) {
-          audioEngine.play().then(() => setPlayState(true)).catch(() => startIframeFallback(currentTrack.id));
-        } else {
-          audioEngine.pause();
-          setPlayState(false);
-        }
-      }
-    });
-
-    dockBtnNext.addEventListener('click', () => advanceTrack(1));
-    dockBtnPrev.addEventListener('click', () => advanceTrack(-1));
-
-    dockBtnShuffle.addEventListener('click', () => {
-      isShuffle = !isShuffle;
-      dockBtnShuffle.classList.toggle('active', isShuffle);
-    });
-
-    dockBtnRepeat.addEventListener('click', () => {
-      isRepeat = !isRepeat;
-      dockBtnRepeat.classList.toggle('active', isRepeat);
-    });
-
-    function advanceTrack(offset) {
-      if (!currentPlaylist.length) return;
-      if (isRepeat && offset === 1) {
-        playSelectedTrack(currentTrack, currentTrackIdx);
-        return;
-      }
-
-      let nextIndex = currentTrackIdx + offset;
-      if (isShuffle) {
-        nextIndex = Math.floor(Math.random() * currentPlaylist.length);
-      } else if (nextIndex >= currentPlaylist.length) {
-        nextIndex = 0;
-      } else if (nextIndex < 0) {
-        nextIndex = currentPlaylist.length - 1;
-      }
-
-      playSelectedTrack(currentPlaylist[nextIndex], nextIndex);
-    }
-
-    function handleTrackFinish() {
-      advanceTrack(1);
-    }
-
-    let isSeeking = false;
-
-    function getActiveDuration() {
-      if (isIframeMode && ytPlayer && typeof ytPlayer.getDuration === 'function') {
-        const d = ytPlayer.getDuration();
-        if (d > 0) return d;
-      }
-      if (!isIframeMode && audioEngine.duration && !isNaN(audioEngine.duration) && audioEngine.duration > 0) {
-        return audioEngine.duration;
-      }
-      if (currentTrack && currentTrack.durationSeconds) {
-        return currentTrack.durationSeconds;
-      }
-      return 0;
-    }
-
-    function getCurrentPlaybackTime() {
-      if (isIframeMode && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
-        return ytPlayer.getCurrentTime() || 0;
-      }
-      return audioEngine.currentTime || 0;
-    }
-
-    function applySeek(targetSeconds) {
-      const totalDur = getActiveDuration();
-      const clamped = Math.max(0, Math.min(targetSeconds, totalDur > 0 ? totalDur : targetSeconds));
-      dockCurrTime.textContent = formatTime(clamped);
-      if (totalDur > 0) {
-        dockSeekBar.value = (clamped / totalDur) * 100;
-        dockDurTime.textContent = formatTime(totalDur);
-      }
-      highlightCurrentLyric(clamped);
-
-      if (isIframeMode && ytPlayer && typeof ytPlayer.seekTo === 'function') {
-        ytPlayer.seekTo(clamped, true);
-      } else if (audioEngine) {
-        audioEngine.currentTime = clamped;
-      }
-    }
-
-    setInterval(() => {
-      if (isSeeking) return;
-
-      const dur = getActiveDuration();
-      if (isIframeMode && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
-        const state = typeof ytPlayer.getPlayerState === 'function' ? ytPlayer.getPlayerState() : -1;
-        if (state === 1) {
-          const curr = ytPlayer.getCurrentTime();
-          dockCurrTime.textContent = formatTime(curr);
-          if (dur > 0) {
-            dockSeekBar.value = (curr / dur) * 100;
-            dockDurTime.textContent = formatTime(dur);
-          }
-          highlightCurrentLyric(curr);
-        }
-      } else if (!isIframeMode && !audioEngine.paused) {
-        const curr = audioEngine.currentTime || 0;
-        dockCurrTime.textContent = formatTime(curr);
-        if (dur > 0) {
-          dockSeekBar.value = (curr / dur) * 100;
-          dockDurTime.textContent = formatTime(dur);
-        }
-        highlightCurrentLyric(curr);
-      }
-    }, 100);
-
-    audioEngine.addEventListener('ended', () => handleTrackFinish());
-    audioEngine.addEventListener('error', () => {
-      if (currentTrack && !isIframeMode) {
-        startIframeFallback(currentTrack.id);
-      }
-    });
-
-    dockSeekBar.addEventListener('pointerdown', () => {
-      isSeeking = true;
-    });
-
-    dockSeekBar.addEventListener('input', () => {
-      isSeeking = true;
-      const totalDur = getActiveDuration();
-      if (totalDur > 0) {
-        const target = (parseFloat(dockSeekBar.value) / 100) * totalDur;
-        dockCurrTime.textContent = formatTime(target);
-        highlightCurrentLyric(target);
-      }
-    });
-
-    dockSeekBar.addEventListener('change', () => {
-      const totalDur = getActiveDuration();
-      if (totalDur > 0) {
-        const target = (parseFloat(dockSeekBar.value) / 100) * totalDur;
-        applySeek(target);
-      }
-      setTimeout(() => {
-        isSeeking = false;
-      }, 250);
-    });
-
-    dockSeekBar.addEventListener('pointerup', () => {
-      setTimeout(() => {
-        isSeeking = false;
-      }, 250);
-    });
-
-    if (dockBtnRewind) {
-      dockBtnRewind.addEventListener('click', () => {
-        const curr = getCurrentPlaybackTime();
-        applySeek(curr - 10);
       });
-    }
 
-    if (dockBtnForward) {
-      dockBtnForward.addEventListener('click', () => {
-        const curr = getCurrentPlaybackTime();
-        applySeek(curr + 10);
-      });
-    }
-
-    dockVolBar.addEventListener('input', () => {
-      audioEngine.volume = dockVolBar.value;
-      if (ytPlayer && typeof ytPlayer.setVolume === 'function') {
-        ytPlayer.setVolume(Math.round(dockVolBar.value * 100));
-      }
-    });
-
-    dockBtnMute.addEventListener('click', () => {
-      audioEngine.muted = !audioEngine.muted;
-      dockBtnMute.classList.toggle('active', audioEngine.muted);
-      if (ytPlayer && typeof ytPlayer.mute === 'function') {
-        if (audioEngine.muted) ytPlayer.mute();
-        else ytPlayer.unMute();
-      }
-    });
-
-    function formatTime(s) {
-      const min = Math.floor(s / 60);
-      const sec = Math.floor(s % 60);
-      return `${min}:${sec < 10 ? '0' : ''}${sec}`;
-    }
-
-    async function fetchLyrics(track) {
-      lyricsStream.innerHTML = '<div class="lyrics-empty">Searching synchronized lyrics...</div>';
-      lyricsBadge.textContent = '';
-      syncedLyrics = [];
-
-      try {
-        const artistQuery = track.artists.map(a => a.name).join(' ');
-        const res = await fetch(`/api/lyrics?id=${track.id}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(artistQuery)}&duration=${track.durationSeconds || 0}`);
-        const data = await res.json();
-        let lyricsData = data;
-        if ((!lyricsData.syncedLyrics || !lyricsData.syncedLyrics.length) && !lyricsData.plainLyrics) {
-          try {
-            const retryRes = await fetch(`/api/lyrics?title=${encodeURIComponent(track.title)}&duration=${track.durationSeconds || 0}`);
-            if (retryRes.ok) {
-              const retryData = await retryRes.json();
-              if ((retryData.syncedLyrics && retryData.syncedLyrics.length) || retryData.plainLyrics) {
-                lyricsData = retryData;
-              }
-            }
-          } catch {
-          }
-        }
-
-        let badgeText = "";
-        if (lyricsData.source === "lrclib" && lyricsData.isSynced) {
-          badgeText = "LRCLIB (Studio Synced)";
-        } else if (lyricsData.source === "kugou" && lyricsData.isSynced) {
-          badgeText = "Kugou (Studio Synced)";
-        } else if (lyricsData.source === "youtube") {
-          badgeText = "YouTube Music (Plain)";
-        } else if (lyricsData.plainLyrics) {
-          badgeText = "Plain Lyrics";
-        }
-        lyricsBadge.textContent = badgeText;
-
-        if (lyricsData.syncedLyrics && lyricsData.syncedLyrics.length > 0) {
-          syncedLyrics = lyricsData.syncedLyrics;
-          lyricsStream.innerHTML = lyricsData.syncedLyrics.map((l, i) => `
-            <div class="lyric-item" id="lyric-row-${i}" data-time="${l.time}">${l.text}</div>
-          `).join('');
-
-          lyricsStream.querySelectorAll('.lyric-item').forEach(el => {
-            el.addEventListener('click', () => {
-              const targetTime = parseFloat(el.dataset.time);
-              if (!isNaN(targetTime)) {
-                applySeek(targetTime);
-              }
-            });
-          });
-        } else if (lyricsData.plainLyrics) {
-          lyricsStream.innerHTML = lyricsData.plainLyrics.split('\n').map(l => `
-            <div class="lyric-item">${l}</div>
-          `).join('');
-        } else {
-          lyricsStream.innerHTML = '<div class="lyrics-empty">Instrumental or no lyrics available for this track.</div>';
-        }
-      } catch {
-        lyricsStream.innerHTML = '<div class="lyrics-empty">Could not load lyrics.</div>';
-      }
-    }
-
-    function highlightCurrentLyric(currentTime) {
-      if (!syncedLyrics.length) return;
-      let activeIdx = -1;
-
-      for (let i = 0; i < syncedLyrics.length; i++) {
-        if (currentTime >= syncedLyrics[i].time) {
-          activeIdx = i;
-        } else {
-          break;
-        }
-      }
-
-      if (activeIdx !== -1) {
-        lyricsStream.querySelectorAll('.lyric-item').forEach((el, idx) => {
-          el.classList.toggle('active', idx === activeIdx);
+      if (currentId) {
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + currentId);
         });
-
-        const activeRow = document.getElementById(`lyric-row-${activeIdx}`);
-        if (activeRow) {
-          activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
       }
-    }
-
-    async function loadUpNext(videoId) {
-      radioQueueList.innerHTML = '<div style="color:var(--text-dim);font-size:0.78rem;padding:8px;">Generating radio station...</div>';
-
-      try {
-        const res = await fetch(`/api/next?id=${videoId}`);
-        const data = await res.json();
-        const queue = data.queue || [];
-
-        if (!queue.length) {
-          radioQueueList.innerHTML = '<div style="color:var(--text-dim);font-size:0.78rem;padding:8px;">Queue is empty.</div>';
-          return;
-        }
-
-        radioQueueList.innerHTML = queue.slice(1, 25).map(q => `
-          <div class="queue-row" data-id="${q.id}">
-            <img class="queue-row-thumb" src="${q.thumbnailUrl}" alt="${q.title}" loading="lazy">
-            <div class="queue-row-info">
-              <div class="queue-row-title">${q.title}</div>
-              <div class="queue-row-artist">${q.artists.map(a => a.name).join(', ')}</div>
-            </div>
-            <div class="queue-row-time">${q.duration}</div>
-          </div>
-        `).join('');
-
-        radioQueueList.querySelectorAll('.queue-row').forEach(row => {
-          row.addEventListener('click', () => {
-            const targetId = row.dataset.id;
-            const target = queue.find(q => q.id === targetId);
-            if (target) {
-              currentPlaylist.push(target);
-              playSelectedTrack(target, currentPlaylist.length - 1);
-            }
-          });
-        });
-      } catch {
-        radioQueueList.innerHTML = '<div style="color:var(--text-dim);font-size:0.78rem;padding:8px;">Radio unavailable.</div>';
-      }
-    }
-
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.setActionHandler('play', () => dockBtnPlay.click());
-      navigator.mediaSession.setActionHandler('pause', () => dockBtnPlay.click());
-      navigator.mediaSession.setActionHandler('previoustrack', () => dockBtnPrev.click());
-      navigator.mediaSession.setActionHandler('nexttrack', () => dockBtnNext.click());
-    }
-
-    performSearch('Die With A Smile');
+    }, { passive: true });
   </script>
 </body>
 </html>

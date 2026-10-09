@@ -21,6 +21,7 @@
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
     { "source": "/docs", "destination": "/docs.html" },
+    { "source": "/player", "destination": "/player.html" },
     { "source": "/api", "destination": "/api/index" },
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
