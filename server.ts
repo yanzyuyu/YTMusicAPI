@@ -43,10 +43,13 @@ const server = createServer(async (req, res) => {
     const ext = extname(filePath);
     const contentType = MIME_TYPES[ext] || "application/octet-stream";
 
+    const isHtml = ext === ".html";
+    const cacheControl = isHtml ? "no-cache, no-store, must-revalidate" : "public, max-age=60";
+
     res.writeHead(200, {
       "Content-Type": contentType,
       "Content-Length": content.length,
-      "Cache-Control": "public, max-age=3600"
+      "Cache-Control": cacheControl
     });
     res.end(content);
   } catch {
