@@ -32,6 +32,9 @@ const server = createServer(async (req, res) => {
   }
 
   let filePath = join(PUBLIC_DIR, pathname === "/" ? "index.html" : pathname);
+  if (!extname(filePath)) {
+    filePath = filePath + ".html";
+  }
 
   try {
     const fileStat = await stat(filePath);
