@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { join, extname } from "node:path";
-import apiHandler from "./api/index.js";
+import apiHandler from "../api/index.js";
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const PUBLIC_DIR = join(process.cwd(), "public");

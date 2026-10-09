@@ -5,9 +5,9 @@
   "type": "module",
   "main": "api/index.ts",
   "scripts": {
-    "dev": "node server.ts",
+    "dev": "node dist/scripts/server.js",
     "build": "tsc",
-    "start": "node server.ts",
+    "start": "node dist/scripts/server.js",
     "check": "tsc --noEmit"
   },
   "devDependencies": {
