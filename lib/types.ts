@@ -116,6 +116,26 @@ export interface PlaylistDetails {
   tracks: PlaylistTrack[];
 }
 
+export interface SpotifyTrackItem {
+  spotifyUri: string;
+  title: string;
+  artist: string;
+  duration: string;
+  durationSeconds: number;
+  audioPreviewUrl: string | null;
+  isExplicit: boolean;
+  matchedTrack?: MusicTrack | null;
+}
+
+export interface SpotifyPlaylistResponse {
+  id: string;
+  title: string;
+  author: string;
+  trackCount: number;
+  coverUrl: string;
+  tracks: SpotifyTrackItem[];
+}
+
 export interface ApiErrorResponse {
   error: string;
   code: string;

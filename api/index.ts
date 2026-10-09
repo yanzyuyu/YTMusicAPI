@@ -6,6 +6,7 @@ import nextHandler from "./next.js";
 import lyricsHandler from "./lyrics.js";
 import streamHandler from "./stream.js";
 import playlistHandler from "./playlist.js";
+import spotifyHandler from "./spotify.js";
 import healthHandler from "./health.js";
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -45,6 +46,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   if (cleanPath === "/api/playlist") {
     return playlistHandler(req, res);
   }
+  if (cleanPath === "/api/spotify") {
+    return spotifyHandler(req, res);
+  }
   if (cleanPath === "/api/health") {
     return healthHandler(req, res);
   }
@@ -78,6 +82,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         playlist: {
           path: "/api/playlist?id={playlistId}",
           description: "Get playlist tracks and details"
+        },
+        spotify: {
+          path: "/api/spotify?url={spotifyUrlOrId}&match={true|false}&limit={number}",
+          description: "Import Spotify playlist tracks and optionally resolve to YouTube Music"
         },
         health: {
           path: "/api/health",
