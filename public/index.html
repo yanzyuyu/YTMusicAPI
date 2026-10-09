@@ -622,9 +622,10 @@
 
     .tester-grid {
       display: grid;
-      grid-template-columns: 160px 1fr auto;
+      grid-template-columns: 210px 1fr auto;
       gap: 12px;
       margin-bottom: 16px;
+      align-items: start;
     }
 
     @media (max-width: 640px) {
@@ -633,7 +634,93 @@
       }
     }
 
-    .form-select, .form-input {
+    .custom-select-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .custom-select-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 9px 12px;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      text-align: left;
+    }
+
+    .custom-select-trigger:focus,
+    .custom-select-wrapper.open .custom-select-trigger {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+      outline: none;
+    }
+
+    .custom-select-arrow {
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .custom-select-wrapper.open .custom-select-arrow {
+      transform: rotate(180deg);
+    }
+
+    .custom-select-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-md);
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 60;
+    }
+
+    .custom-select-wrapper.open .custom-select-dropdown {
+      display: block;
+    }
+
+    .custom-select-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text);
+      transition: background-color 0.1s;
+    }
+
+    .custom-select-item:hover {
+      background-color: var(--surface-muted);
+    }
+
+    .custom-select-item.active {
+      background-color: var(--accent-surface);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .custom-select-path {
+      flex: 1;
+    }
+
+    .form-input {
       font-family: var(--font);
       font-size: 0.86rem;
       padding: 9px 12px;
@@ -645,7 +732,7 @@
       transition: border-color 0.15s;
     }
 
-    .form-select:focus, .form-input:focus {
+    .form-input:focus {
       border-color: var(--accent);
     }
 
@@ -945,16 +1032,46 @@
 
         <div class="tester-panel">
           <div class="tester-grid">
-            <select id="tester-select" class="form-select">
-              <option value="/api/search?q=Die+With+A+Smile&limit=5">GET /api/search</option>
-              <option value="/api/song?id=kPa7bsKwL-8">GET /api/song</option>
-              <option value="/api/stream?id=kPa7bsKwL-8&redirect=false">GET /api/stream</option>
-              <option value="/api/lyrics?title=Die+With+A+Smile&artist=Lady+Gaga&duration=251">GET /api/lyrics</option>
-              <option value="/api/spotify?url=https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M&limit=5&match=true">GET /api/spotify</option>
-              <option value="/api/next?id=kPa7bsKwL-8">GET /api/next</option>
-              <option value="/api/playlist?id=RDAMVMkPa7bsKwL-8">GET /api/playlist</option>
-              <option value="/api/health">GET /api/health</option>
-            </select>
+            <div class="custom-select-wrapper" id="tester-custom-select">
+              <button type="button" class="custom-select-trigger" id="tester-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+                <span class="custom-select-value" id="tester-select-label">GET /api/search</span>
+                <svg class="custom-select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div class="custom-select-dropdown" id="tester-select-dropdown" role="listbox">
+                <div class="custom-select-item active" role="option" data-value="/api/search?q=Die+With+A+Smile&limit=5">
+                  <span class="method-tag get">GET</span>
+                  <span class="custom-select-path">/api/search</span>
+                </div>
+                <div class="custom-select-item" role="option" data-value="/api/song?id=kPa7bsKwL-8">
+                  <span class="method-tag get">GET</span>
+                  <span class="custom-select-path">/api/song</span>
+                </div>
+                <div class="custom-select-item" role="option" data-value="/api/stream?id=kPa7bsKwL-8&redirect=false">
+                  <span class="method-tag get">GET</span>
+                  <span class="custom-select-path">/api/stream</span>
+                </div>
+                <div class="custom-select-item" role="option" data-value="/api/lyrics?title=Die+With+A+Smile&artist=Lady+Gaga&duration=251">
+                  <span class="method-tag get">GET</span>
+                  <span class="custom-select-path">/api/lyrics</span>
+                </div>
+                <div class="custom-select-item" role="option" data-value="/api/spotify?url=https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M&limit=5&match=true">
+                  <span class="method-tag get">GET</span>
+                  <span class="custom-select-path">/api/spotify</span>
+                </div>
+                <div class="custom-select-item" role="option" data-value="/api/next?id=kPa7bsKwL-8">
+                  <span class="method-tag get">GET</span>
+                  <span class="custom-select-path">/api/next</span>
+                </div>
+                <div class="custom-select-item" role="option" data-value="/api/playlist?id=RDAMVMkPa7bsKwL-8">
+                  <span class="method-tag get">GET</span>
+                  <span class="custom-select-path">/api/playlist</span>
+                </div>
+                <div class="custom-select-item" role="option" data-value="/api/health">
+                  <span class="method-tag get">GET</span>
+                  <span class="custom-select-path">/api/health</span>
+                </div>
+              </div>
+            </div>
             <input type="text" id="tester-url-input" class="form-input" value="/api/search?q=Die+With+A+Smile&limit=5">
             <button id="tester-btn-send" class="btn-primary">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
@@ -1704,7 +1821,6 @@ async function searchAndPlay(query: string) {
       });
     }
 
-    const testerSelect = document.getElementById('tester-select');
     const testerUrlInput = document.getElementById('tester-url-input');
     const testerBtnSend = document.getElementById('tester-btn-send');
     const testerStatus = document.getElementById('tester-status');
@@ -1751,9 +1867,39 @@ async function searchAndPlay(query: string) {
       }
     });
 
-    testerSelect.addEventListener('change', () => {
-      testerUrlInput.value = testerSelect.value;
-    });
+    const testerSelectTrigger = document.getElementById('tester-select-trigger');
+    const testerSelectWrap = document.getElementById('tester-custom-select');
+    const testerSelectLabel = document.getElementById('tester-select-label');
+    const testerSelectItems = document.querySelectorAll('.custom-select-item');
+
+    if (testerSelectTrigger && testerSelectWrap) {
+      testerSelectTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = testerSelectWrap.classList.toggle('open');
+        testerSelectTrigger.setAttribute('aria-expanded', isOpen);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!testerSelectWrap.contains(e.target)) {
+          testerSelectWrap.classList.remove('open');
+          testerSelectTrigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      testerSelectItems.forEach(item => {
+        item.addEventListener('click', () => {
+          testerSelectItems.forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          const val = item.dataset.value;
+          const method = item.querySelector('.method-tag').textContent;
+          const path = item.querySelector('.custom-select-path').textContent;
+          testerSelectLabel.textContent = `${method} ${path}`;
+          testerUrlInput.value = val;
+          testerSelectWrap.classList.remove('open');
+          testerSelectTrigger.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
 
     testerCopyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(testerOutput.textContent.trim()).then(() => {
