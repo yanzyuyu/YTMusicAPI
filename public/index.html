@@ -739,23 +739,48 @@
 
     .dock-range-slider {
       flex: 1;
-      height: 4px;
-      background-color: var(--surface-2);
-      border-radius: 2px;
+      height: 18px;
+      background: transparent;
       appearance: none;
       outline: none;
       cursor: pointer;
-      transition: background-color 0.15s;
     }
 
-    .dock-range-slider:hover {
+    .dock-range-slider::-webkit-slider-runnable-track {
+      height: 4px;
+      background-color: var(--surface-2);
+      border-radius: 2px;
+    }
+
+    .dock-range-slider:hover::-webkit-slider-runnable-track {
       background-color: #27272a;
     }
 
     .dock-range-slider::-webkit-slider-thumb {
       appearance: none;
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
+      border-radius: var(--radius);
+      background-color: var(--accent);
+      cursor: pointer;
+      margin-top: -4px;
+      transition: transform 0.1s;
+    }
+
+    .dock-range-slider:active::-webkit-slider-thumb {
+      transform: scale(1.2);
+    }
+
+    .dock-range-slider::-moz-range-track {
+      height: 4px;
+      background-color: var(--surface-2);
+      border-radius: 2px;
+    }
+
+    .dock-range-slider::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border: none;
       border-radius: var(--radius);
       background-color: var(--accent);
       cursor: pointer;
@@ -999,9 +1024,15 @@
         <button id="dock-btn-prev" class="btn-dock-icon" aria-label="Previous">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
         </button>
+        <button id="dock-btn-rewind" class="btn-dock-icon" aria-label="Rewind 10 seconds" title="-10s">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
+        </button>
         <button id="dock-btn-play" class="btn-play-hero" aria-label="Play or Pause">
           <svg id="dock-icon-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           <svg id="dock-icon-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        </button>
+        <button id="dock-btn-forward" class="btn-dock-icon" aria-label="Forward 10 seconds" title="+10s">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
         </button>
         <button id="dock-btn-next" class="btn-dock-icon" aria-label="Next">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
@@ -1090,6 +1121,8 @@
     const dockIconPause = document.getElementById('dock-icon-pause');
     const dockBtnPrev = document.getElementById('dock-btn-prev');
     const dockBtnNext = document.getElementById('dock-btn-next');
+    const dockBtnRewind = document.getElementById('dock-btn-rewind');
+    const dockBtnForward = document.getElementById('dock-btn-forward');
     const dockBtnShuffle = document.getElementById('dock-btn-shuffle');
     const dockBtnRepeat = document.getElementById('dock-btn-repeat');
     const dockSeekBar = document.getElementById('dock-seek-bar');
@@ -1405,12 +1438,54 @@
       advanceTrack(1);
     }
 
+    let isSeeking = false;
+
+    function getActiveDuration() {
+      if (isIframeMode && ytPlayer && typeof ytPlayer.getDuration === 'function') {
+        const d = ytPlayer.getDuration();
+        if (d > 0) return d;
+      }
+      if (!isIframeMode && audioEngine.duration && !isNaN(audioEngine.duration) && audioEngine.duration > 0) {
+        return audioEngine.duration;
+      }
+      if (currentTrack && currentTrack.durationSeconds) {
+        return currentTrack.durationSeconds;
+      }
+      return 0;
+    }
+
+    function getCurrentPlaybackTime() {
+      if (isIframeMode && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+        return ytPlayer.getCurrentTime() || 0;
+      }
+      return audioEngine.currentTime || 0;
+    }
+
+    function applySeek(targetSeconds) {
+      const totalDur = getActiveDuration();
+      const clamped = Math.max(0, Math.min(targetSeconds, totalDur > 0 ? totalDur : targetSeconds));
+      dockCurrTime.textContent = formatTime(clamped);
+      if (totalDur > 0) {
+        dockSeekBar.value = (clamped / totalDur) * 100;
+        dockDurTime.textContent = formatTime(totalDur);
+      }
+      highlightCurrentLyric(clamped);
+
+      if (isIframeMode && ytPlayer && typeof ytPlayer.seekTo === 'function') {
+        ytPlayer.seekTo(clamped, true);
+      } else if (audioEngine) {
+        audioEngine.currentTime = clamped;
+      }
+    }
+
     setInterval(() => {
+      if (isSeeking) return;
+
+      const dur = getActiveDuration();
       if (isIframeMode && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
         const state = typeof ytPlayer.getPlayerState === 'function' ? ytPlayer.getPlayerState() : -1;
         if (state === 1) {
           const curr = ytPlayer.getCurrentTime();
-          const dur = ytPlayer.getDuration() || (currentTrack ? currentTrack.durationSeconds : 0);
           dockCurrTime.textContent = formatTime(curr);
           if (dur > 0) {
             dockSeekBar.value = (curr / dur) * 100;
@@ -1418,11 +1493,13 @@
           }
           highlightCurrentLyric(curr);
         }
-      } else if (!isIframeMode && !audioEngine.paused && audioEngine.duration) {
-        const curr = audioEngine.currentTime;
-        const dur = audioEngine.duration;
+      } else if (!isIframeMode && !audioEngine.paused) {
+        const curr = audioEngine.currentTime || 0;
         dockCurrTime.textContent = formatTime(curr);
-        dockSeekBar.value = (curr / dur) * 100;
+        if (dur > 0) {
+          dockSeekBar.value = (curr / dur) * 100;
+          dockDurTime.textContent = formatTime(dur);
+        }
         highlightCurrentLyric(curr);
       }
     }, 100);
@@ -1434,20 +1511,50 @@
       }
     });
 
+    dockSeekBar.addEventListener('pointerdown', () => {
+      isSeeking = true;
+    });
+
     dockSeekBar.addEventListener('input', () => {
-      if (isIframeMode && ytPlayer && typeof ytPlayer.seekTo === 'function') {
-        const dur = ytPlayer.getDuration() || (currentTrack ? currentTrack.durationSeconds : 0);
-        const target = (dockSeekBar.value / 100) * dur;
-        ytPlayer.seekTo(target, true);
-        dockCurrTime.textContent = formatTime(target);
-        highlightCurrentLyric(target);
-      } else if (audioEngine.duration) {
-        const target = (dockSeekBar.value / 100) * audioEngine.duration;
-        audioEngine.currentTime = target;
+      isSeeking = true;
+      const totalDur = getActiveDuration();
+      if (totalDur > 0) {
+        const target = (parseFloat(dockSeekBar.value) / 100) * totalDur;
         dockCurrTime.textContent = formatTime(target);
         highlightCurrentLyric(target);
       }
     });
+
+    dockSeekBar.addEventListener('change', () => {
+      const totalDur = getActiveDuration();
+      if (totalDur > 0) {
+        const target = (parseFloat(dockSeekBar.value) / 100) * totalDur;
+        applySeek(target);
+      }
+      setTimeout(() => {
+        isSeeking = false;
+      }, 250);
+    });
+
+    dockSeekBar.addEventListener('pointerup', () => {
+      setTimeout(() => {
+        isSeeking = false;
+      }, 250);
+    });
+
+    if (dockBtnRewind) {
+      dockBtnRewind.addEventListener('click', () => {
+        const curr = getCurrentPlaybackTime();
+        applySeek(curr - 10);
+      });
+    }
+
+    if (dockBtnForward) {
+      dockBtnForward.addEventListener('click', () => {
+        const curr = getCurrentPlaybackTime();
+        applySeek(curr + 10);
+      });
+    }
 
     dockVolBar.addEventListener('input', () => {
       audioEngine.volume = dockVolBar.value;
@@ -1515,13 +1622,8 @@
           lyricsStream.querySelectorAll('.lyric-item').forEach(el => {
             el.addEventListener('click', () => {
               const targetTime = parseFloat(el.dataset.time);
-              if (isNaN(targetTime)) return;
-              if (isIframeMode && ytPlayer && typeof ytPlayer.seekTo === 'function') {
-                ytPlayer.seekTo(targetTime, true);
-                highlightCurrentLyric(targetTime);
-              } else if (audioEngine.duration) {
-                audioEngine.currentTime = targetTime;
-                highlightCurrentLyric(targetTime);
+              if (!isNaN(targetTime)) {
+                applySeek(targetTime);
               }
             });
           });
