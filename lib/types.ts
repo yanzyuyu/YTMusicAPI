@@ -76,7 +76,7 @@ export interface LyricsResponseData {
   rawSyncedLyrics: string | null;
   isSynced: boolean;
   isEstimated: boolean;
-  source: "youtube" | "lrclib" | "estimated" | "none";
+  source: "youtube" | "lrclib" | "kugou" | "estimated" | "none";
 }
 
 export interface AudioStreamItem {

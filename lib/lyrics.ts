@@ -13,7 +13,7 @@ export function parseLrc(lrcText: string): SyncedLyricLine[] {
       const minutes = parseInt(match[1], 10);
       const seconds = parseFloat(match[2]);
       const text = (match[3] || "").trim();
-      if (!isNaN(minutes) && !isNaN(seconds)) {
+      if (!isNaN(minutes) && !isNaN(seconds) && text.length > 0) {
         result.push({
           time: Math.round((minutes * 60 + seconds) * 100) / 100,
           text
@@ -42,32 +42,197 @@ export function cleanSearchArtist(artist: string): string {
     .trim();
 }
 
-export function generateAutoSyncedLyrics(plainText: string, durationSeconds: number): SyncedLyricLine[] {
-  const lines = plainText
-    .split("\n")
-    .map(l => l.trim())
-    .filter(l => l.length > 0);
+interface LyricCandidate {
+  synced?: SyncedLyricLine[];
+  raw?: string;
+  plain?: string;
+  track?: string;
+  artist?: string;
+}
 
-  if (lines.length === 0 || !durationSeconds || durationSeconds <= 15) return [];
+async function fetchLrclibLyrics(
+  title: string,
+  artist: string,
+  cleanedTitle: string,
+  cleanedArtist: string,
+  durationSec: number
+): Promise<LyricCandidate | null> {
+  const queriesToTry = [
+    { t: cleanedTitle, a: cleanedArtist },
+    { t: title, a: cleanedArtist },
+    { t: cleanedTitle, a: artist },
+    { t: title, a: artist }
+  ];
 
-  const intro = Math.min(10, Math.round(durationSeconds * 0.05));
-  const outro = Math.min(12, Math.round(durationSeconds * 0.06));
-  const availableDuration = Math.max(10, durationSeconds - intro - outro);
+  for (const q of queriesToTry) {
+    if (!q.t || !q.a) continue;
+    try {
+      const p = new URLSearchParams();
+      p.set("track_name", q.t);
+      p.set("artist_name", q.a);
+      if (durationSec > 0) p.set("duration", durationSec.toString());
 
-  const totalWeight = lines.reduce((acc, l) => acc + Math.max(l.length, 12), 0);
-  let currentTime = intro;
+      const res = await fetch(`https://lrclib.net/api/get?${p.toString()}`, {
+        headers: { "User-Agent": "MusicPlayerAPI/1.0" },
+        signal: AbortSignal.timeout(3500)
+      });
 
-  const result: SyncedLyricLine[] = [];
-  for (const line of lines) {
-    result.push({
-      time: Math.round(currentTime * 100) / 100,
-      text: line
-    });
-    const weight = Math.max(line.length, 12);
-    const lineDuration = Math.max(2.2, (weight / totalWeight) * availableDuration);
-    currentTime += lineDuration;
+      if (res.ok) {
+        const item = await res.json() as {
+          trackName?: string;
+          artistName?: string;
+          plainLyrics?: string;
+          syncedLyrics?: string;
+        };
+
+        if (item.syncedLyrics) {
+          const parsed = parseLrc(item.syncedLyrics);
+          if (parsed.length > 0) {
+            return {
+              synced: parsed,
+              raw: item.syncedLyrics,
+              plain: item.plainLyrics,
+              track: item.trackName,
+              artist: item.artistName
+            };
+          }
+        }
+        if (item.plainLyrics) {
+          return { plain: item.plainLyrics, track: item.trackName, artist: item.artistName };
+        }
+      }
+    } catch {
+    }
   }
-  return result;
+
+  const searchQueries = [
+    `${cleanedTitle} ${cleanedArtist}`.trim(),
+    `${cleanedTitle}`.trim(),
+    `${title}`.trim()
+  ];
+
+  for (const queryStr of searchQueries) {
+    if (!queryStr) continue;
+    try {
+      const sRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(queryStr)}`, {
+        headers: { "User-Agent": "MusicPlayerAPI/1.0" },
+        signal: AbortSignal.timeout(3500)
+      });
+
+      if (sRes.ok) {
+        const list = await sRes.json() as Array<{
+          trackName?: string;
+          artistName?: string;
+          plainLyrics?: string;
+          syncedLyrics?: string;
+          duration?: number;
+        }>;
+
+        if (Array.isArray(list) && list.length > 0) {
+          let matched = list.find(item => item.syncedLyrics);
+          if (!matched) matched = list[0];
+
+          if (matched && matched.syncedLyrics) {
+            const parsed = parseLrc(matched.syncedLyrics);
+            if (parsed.length > 0) {
+              return {
+                synced: parsed,
+                raw: matched.syncedLyrics,
+                plain: matched.plainLyrics,
+                track: matched.trackName,
+                artist: matched.artistName
+              };
+            }
+          }
+          if (matched && matched.plainLyrics) {
+            return { plain: matched.plainLyrics, track: matched.trackName, artist: matched.artistName };
+          }
+        }
+      }
+    } catch {
+    }
+  }
+
+  return null;
+}
+
+async function fetchKugouLyrics(
+  title: string,
+  artist: string,
+  durationSec: number
+): Promise<LyricCandidate | null> {
+  const searchKeywords = [
+    [title, artist].filter(Boolean).join(" "),
+    title
+  ];
+
+  for (const kw of searchKeywords) {
+    if (!kw) continue;
+    try {
+      const sUrl = `http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=${encodeURIComponent(kw)}&page=1&pagesize=5`;
+      const sRes = await fetch(sUrl, { signal: AbortSignal.timeout(3500) });
+      if (!sRes.ok) continue;
+
+      const sData = await sRes.json() as {
+        data?: {
+          info?: Array<{
+            songname: string;
+            singername: string;
+            hash: string;
+            duration: number;
+          }>;
+        };
+      };
+
+      const list = sData?.data?.info || [];
+      if (!list.length) continue;
+
+      let target = list[0];
+      if (durationSec > 0) {
+        const matchByDur = list.find(item => Math.abs(item.duration - durationSec) <= 5);
+        if (matchByDur) target = matchByDur;
+      }
+
+      const durParam = target.duration ? target.duration * 1000 : durationSec * 1000;
+      const cUrl = `http://krcs.kugou.com/search?ver=1&man=yes&client=mobi&keyword=${encodeURIComponent(target.songname)}&duration=${durParam}&hash=${target.hash}`;
+      const cRes = await fetch(cUrl, { signal: AbortSignal.timeout(3500) });
+      if (!cRes.ok) continue;
+
+      const cData = await cRes.json() as {
+        candidates?: Array<{
+          id: string;
+          accesskey: string;
+        }>;
+      };
+
+      const cands = cData?.candidates || [];
+      if (!cands.length) continue;
+
+      const cand = cands[0];
+      const dUrl = `http://krcs.kugou.com/download?ver=1&client=mobi&id=${cand.id}&accesskey=${cand.accesskey}&fmt=lrc&charset=utf8`;
+      const dRes = await fetch(dUrl, { signal: AbortSignal.timeout(3500) });
+      if (!dRes.ok) continue;
+
+      const dData = await dRes.json() as { content?: string };
+      if (!dData?.content) continue;
+
+      const lrcString = Buffer.from(dData.content, "base64").toString("utf-8");
+      const parsed = parseLrc(lrcString);
+      if (parsed.length > 0) {
+        const plain = parsed.map(p => p.text).join("\n");
+        return {
+          synced: parsed,
+          raw: lrcString,
+          plain,
+          track: target.songname,
+          artist: target.singername
+        };
+      }
+    } catch {
+    }
+  }
+
+  return null;
 }
 
 export async function resolveLyrics(
@@ -104,104 +269,24 @@ export async function resolveLyrics(
   const cleanedTitle = cleanSearchTitle(songTitle);
   const cleanedArtist = cleanSearchArtist(songArtist);
 
-  const lrclibPromise = (async (): Promise<{ synced?: SyncedLyricLine[]; raw?: string; plain?: string; track?: string; artist?: string } | null> => {
-    if (!songTitle && !cleanedTitle) return null;
+  const lrclibPromise = fetchLrclibLyrics(
+    songTitle,
+    songArtist,
+    cleanedTitle,
+    cleanedArtist,
+    songDuration
+  );
 
-    const queriesToTry = [
-      { t: cleanedTitle, a: cleanedArtist },
-      { t: songTitle, a: cleanedArtist },
-      { t: cleanedTitle, a: songArtist }
-    ];
+  const kugouPromise = fetchKugouLyrics(
+    cleanedTitle || songTitle,
+    cleanedArtist || songArtist,
+    songDuration
+  );
 
-    for (const q of queriesToTry) {
-      if (!q.t || !q.a) continue;
-      try {
-        const p = new URLSearchParams();
-        p.set("track_name", q.t);
-        p.set("artist_name", q.a);
-        if (songDuration > 0) p.set("duration", songDuration.toString());
-
-        const res = await fetch(`https://lrclib.net/api/get?${p.toString()}`, {
-          headers: { "User-Agent": "MusicPlayerAPI/1.0" },
-          signal: AbortSignal.timeout(3500)
-        });
-
-        if (res.ok) {
-          const item = await res.json() as {
-            trackName?: string;
-            artistName?: string;
-            plainLyrics?: string;
-            syncedLyrics?: string;
-          };
-
-          if (item.syncedLyrics) {
-            return {
-              synced: parseLrc(item.syncedLyrics),
-              raw: item.syncedLyrics,
-              plain: item.plainLyrics,
-              track: item.trackName,
-              artist: item.artistName
-            };
-          }
-          if (item.plainLyrics) {
-            return { plain: item.plainLyrics, track: item.trackName, artist: item.artistName };
-          }
-        }
-      } catch {
-      }
-    }
-
-    const searchQueries = [
-      `${cleanedTitle} ${cleanedArtist}`.trim(),
-      `${cleanedTitle}`.trim(),
-      `${songTitle}`.trim()
-    ];
-
-    for (const queryStr of searchQueries) {
-      if (!queryStr) continue;
-      try {
-        const sRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(queryStr)}`, {
-          headers: { "User-Agent": "MusicPlayerAPI/1.0" },
-          signal: AbortSignal.timeout(3500)
-        });
-
-        if (sRes.ok) {
-          const list = await sRes.json() as Array<{
-            trackName?: string;
-            artistName?: string;
-            plainLyrics?: string;
-            syncedLyrics?: string;
-            duration?: number;
-          }>;
-
-          if (Array.isArray(list) && list.length > 0) {
-            let matched = list.find(item => item.syncedLyrics);
-            if (!matched) matched = list[0];
-
-            if (matched && matched.syncedLyrics) {
-              return {
-                synced: parseLrc(matched.syncedLyrics),
-                raw: matched.syncedLyrics,
-                plain: matched.plainLyrics,
-                track: matched.trackName,
-                artist: matched.artistName
-              };
-            }
-            if (matched && matched.plainLyrics) {
-              return { plain: matched.plainLyrics, track: matched.trackName, artist: matched.artistName };
-            }
-          }
-        }
-      } catch {
-      }
-    }
-
-    return null;
-  })();
-
-  const [ytResult, lrcResult] = await Promise.all([
+  const [ytResult, lrcResult, kugouResult] = await Promise.all([
     ytFetchPromise || Promise.resolve(null),
-    lrclibPromise
+    lrclibPromise,
+    kugouPromise
   ]);
 
   if (ytResult) {
@@ -221,23 +306,22 @@ export async function resolveLyrics(
     };
   }
 
-  const plainCandidate = ytLyricsText || lrcResult?.plain || "";
+  if (kugouResult && kugouResult.synced && kugouResult.synced.length > 0) {
+    return {
+      trackName: kugouResult.track || songTitle,
+      artistName: kugouResult.artist || songArtist,
+      plainLyrics: kugouResult.plain || ytLyricsText || "",
+      syncedLyrics: kugouResult.synced,
+      rawSyncedLyrics: kugouResult.raw || null,
+      isSynced: true,
+      isEstimated: false,
+      source: "kugou"
+    };
+  }
+
+  const plainCandidate = ytLyricsText || lrcResult?.plain || kugouResult?.plain || "";
 
   if (plainCandidate) {
-    if (songDuration > 15) {
-      const autoPaced = generateAutoSyncedLyrics(plainCandidate, songDuration);
-      return {
-        trackName: songTitle,
-        artistName: songArtist,
-        plainLyrics: plainCandidate,
-        syncedLyrics: autoPaced,
-        rawSyncedLyrics: null,
-        isSynced: true,
-        isEstimated: true,
-        source: ytLyricsText ? "youtube" : "lrclib"
-      };
-    }
-
     return {
       trackName: songTitle,
       artistName: songArtist,
@@ -246,7 +330,7 @@ export async function resolveLyrics(
       rawSyncedLyrics: null,
       isSynced: false,
       isEstimated: false,
-      source: ytLyricsText ? "youtube" : "lrclib"
+      source: ytLyricsText ? "youtube" : (lrcResult?.plain ? "lrclib" : "kugou")
     };
   }
 
