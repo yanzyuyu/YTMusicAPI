@@ -238,55 +238,73 @@ export async function searchMusic(query: string, type: string = "songs"): Promis
 }
 
 export async function getSongDetails(videoId: string): Promise<SongDetails> {
-  const res = await fetch(`${YTM_URL}/player`, {
-    method: "POST",
-    headers: HEADERS,
-    body: JSON.stringify({
-      context: CLIENT_CONTEXT,
-      videoId
-    }),
-    signal: AbortSignal.timeout(9000)
-  });
+  try {
+    const res = await fetch(`${YTM_URL}/player`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({
+        context: CLIENT_CONTEXT,
+        videoId
+      }),
+      signal: AbortSignal.timeout(9000)
+    });
 
-  if (!res.ok) {
-    throw new Error(`YouTube Music player request failed with status ${res.status}`);
-  }
-
-  const data = await res.json() as {
-    videoDetails?: {
-      videoId?: string;
-      title?: string;
-      author?: string;
-      channelId?: string;
-      lengthSeconds?: string;
-      viewCount?: string;
-      thumbnail?: {
-        thumbnails?: ThumbnailItem[];
+    if (res.ok) {
+      const data = await res.json() as {
+        videoDetails?: {
+          videoId?: string;
+          title?: string;
+          author?: string;
+          channelId?: string;
+          lengthSeconds?: string;
+          viewCount?: string;
+          thumbnail?: {
+            thumbnails?: ThumbnailItem[];
+          };
+        };
       };
-    };
-  };
 
-  const details = data.videoDetails;
-  if (!details || !details.videoId) {
-    throw new Error("Song not found or unavailable");
+      const details = data.videoDetails;
+      if (details && details.videoId) {
+        const durSec = parseInt(details.lengthSeconds || "0", 10);
+        const thumbnails = details.thumbnail?.thumbnails || [];
+
+        return {
+          id: details.videoId,
+          title: details.title || "",
+          author: details.author || "Unknown",
+          channelId: details.channelId,
+          duration: formatDuration(durSec),
+          durationSeconds: durSec,
+          thumbnails,
+          thumbnailUrl: getBestThumbnail(thumbnails, details.videoId),
+          views: details.viewCount || "0",
+          shareUrl: `https://music.youtube.com/watch?v=${details.videoId}`,
+          embedUrl: `https://www.youtube.com/embed/${details.videoId}?autoplay=1&enablejsapi=1`
+        };
+      }
+    }
+  } catch {}
+
+  const nextData = await getWatchNext(videoId);
+  const item = nextData.queue.find(q => q.id === videoId) || nextData.queue[0];
+  if (item) {
+    return {
+      id: item.id || videoId,
+      title: item.title,
+      author: item.artists.map(a => a.name).join(", "),
+      channelId: item.artists[0]?.id,
+      duration: item.duration,
+      durationSeconds: item.durationSeconds,
+      thumbnails: item.thumbnails,
+      thumbnailUrl: item.thumbnailUrl,
+      views: "0",
+      shareUrl: `https://music.youtube.com/watch?v=${videoId}`,
+      embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`
+    };
   }
 
-  const durSec = parseInt(details.lengthSeconds || "0", 10);
-  const thumbnails = details.thumbnail?.thumbnails || [];
-
-  return {
-    id: details.videoId,
-    title: details.title || "",
-    author: details.author || "Unknown",
-    channelId: details.channelId,
-    duration: formatDuration(durSec),
-    durationSeconds: durSec,
-    thumbnails,
-    thumbnailUrl: getBestThumbnail(thumbnails, details.videoId),
-    views: details.viewCount || "0",
-    shareUrl: `https://music.youtube.com/watch?v=${details.videoId}`,
-    embedUrl: `https://www.youtube.com/embed/${details.videoId}?autoplay=1&enablejsapi=1`
-  };
+  throw new Error("Song not found or unavailable");
 }
 
 export async function getWatchNext(videoId: string): Promise<NextResponseData> {
