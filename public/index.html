@@ -1262,15 +1262,20 @@
       if (iframeTimer) clearInterval(iframeTimer);
 
       metricStreams.textContent = 'Resolving...';
-      const streamUrl = `/api/stream?id=${track.id}&play=true`;
-      audioEngine.src = streamUrl;
-
-      audioEngine.play().then(() => {
-        metricStreams.textContent = 'Direct 302 CDN';
-        setPlayState(true);
-      }).catch(() => {
+      try {
+        const streamRes = await fetch(`/api/stream?id=${track.id}`);
+        const streamData = await streamRes.json();
+        if (streamData.bestAudio && streamData.bestAudio.url) {
+          audioEngine.src = streamData.bestAudio.url;
+          metricStreams.textContent = 'Direct 302 CDN';
+          await audioEngine.play();
+          setPlayState(true);
+        } else {
+          startIframeFallback(track.id);
+        }
+      } catch {
         startIframeFallback(track.id);
-      });
+      }
     }
 
     function startIframeFallback(videoId) {
@@ -1363,6 +1368,11 @@
     });
 
     audioEngine.addEventListener('ended', () => handleTrackFinish());
+    audioEngine.addEventListener('error', () => {
+      if (currentTrack && !isIframeMode) {
+        startIframeFallback(currentTrack.id);
+      }
+    });
 
     dockSeekBar.addEventListener('input', () => {
       if (audioEngine.duration) {
