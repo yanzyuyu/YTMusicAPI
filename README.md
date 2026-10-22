@@ -40,7 +40,7 @@ Deploying music player APIs to serverless edge platforms like Vercel or AWS Lamb
 
 `YTMusicAPI` eliminates these failure modes by combining native YouTube InnerTube endpoints with a direct HTTP 302 edge redirect architecture, keeping cold starts under 30ms and bundle size below 100KB with zero external runtime dependencies.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/▲_Back_to_Top-21262d?style=flat-square" alt="Back to Top"></a></p>
 
 ---
 
@@ -54,7 +54,7 @@ Deploying music player APIs to serverless edge platforms like Vercel or AWS Lamb
 | **Audio Quality Engine** | Multi-instance Invidious resolver + fallback embed | Highest-bitrate Opus (WebM) and AAC (M4A) streams sorted by bitrate. |
 | **Runtime Footprint** | Native Node.js `fetch()` and standard libraries | 0 runtime dependencies; 100KB bundle; cold starts < 30ms. |
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/▲_Back_to_Top-21262d?style=flat-square" alt="Back to Top"></a></p>
 
 ---
 
@@ -62,7 +62,7 @@ Deploying music player APIs to serverless edge platforms like Vercel or AWS Lamb
 
 ![Terminal Execution](terminal_demo.svg)
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/▲_Back_to_Top-21262d?style=flat-square" alt="Back to Top"></a></p>
 
 ---
 
@@ -88,7 +88,7 @@ npm start
 
 The server starts locally at `http://localhost:3000`. Navigate to this URL in your browser to access the built-in web music player and interactive API playground.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/▲_Back_to_Top-21262d?style=flat-square" alt="Back to Top"></a></p>
 
 ---
 
@@ -107,7 +107,7 @@ vercel
 2. In the [Vercel Dashboard](https://vercel.com), select **Add New Project** and import `YTMusicAPI`.
 3. Click **Deploy**. Vercel will automatically discover the `/api` directory as individual serverless endpoints.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/▲_Back_to_Top-21262d?style=flat-square" alt="Back to Top"></a></p>
 
 ---
 
@@ -160,7 +160,7 @@ Use directly in HTML5 `<audio>` tags or mobile audio players:
 <audio src="https://your-domain.vercel.app/api/stream?id=DlFXDl_ROAM&play=true" controls autoplay></audio>
 ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/▲_Back_to_Top-21262d?style=flat-square" alt="Back to Top"></a></p>
 
 ---
 
@@ -202,7 +202,7 @@ YTMusicAPI/
 └── README.md                 # Production documentation
 ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/▲_Back_to_Top-21262d?style=flat-square" alt="Back to Top"></a></p>
 
 ---
 
@@ -239,7 +239,7 @@ npx --yes tyw-cli scan .
 ```
 All 20 files pass with a clean 100/100 score and 0 vulnerabilities.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/▲_Back_to_Top-21262d?style=flat-square" alt="Back to Top"></a></p>
 
 ---
 
@@ -251,7 +251,7 @@ All 20 files pass with a clean 100/100 score and 0 vulnerabilities.
 4. Commit your changes (`git commit -m "add audio cache layer"`).
 5. Push to the branch (`git push origin feature/audio-cache`) and submit a Pull Request.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/▲_Back_to_Top-21262d?style=flat-square" alt="Back to Top"></a></p>
 
 ---
 
