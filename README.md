@@ -1,18 +1,23 @@
 <a name="readme-top"></a>
 
-# YTMusicAPI
+<p align="center">
+  <img src="banner.svg" alt="YTMusicAPI Banner" width="100%" />
+</p>
 
-<!-- Universal Shields.io Badges Matrix -->
-[![Node Version](https://img.shields.io/badge/node-20%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org)
-[![TypeScript](https://img.shields.io/badge/typescript-5.9%2B-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Release](https://img.shields.io/github/v/release/yanzyuyu/YTMusicAPI?color=blue&logo=github)](https://github.com/yanzyuyu/YTMusicAPI/releases)
-[![Streaming](https://img.shields.io/badge/streaming-302%20direct%20edge-blue)](#)
-[![Dependencies](https://img.shields.io/badge/dependencies-0%20(zero%20runtime)-brightgreen)](#)
-[![Test Suite](https://img.shields.io/badge/tests-15%2F15%20passed-success)](#)
-[![Security Audit](https://img.shields.io/badge/security%20audit-passed%20100%2F100-success)](#)
-[![License](https://img.shields.io/badge/license-MIT-informational)](LICENSE)
+<p align="center">
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-20%2B-339933?logo=node.js&logoColor=white" alt="Node Version" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/typescript-5.9%2B-3178C6?logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://github.com/yanzyuyu/YTMusicAPI/releases"><img src="https://img.shields.io/badge/release-v1.0.0-0969da?logo=github&logoColor=white" alt="Release" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/streaming-302%20direct%20edge-blue" alt="Streaming" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/dependencies-0%20(zero%20runtime)-brightgreen" alt="Dependencies" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-15%2F15%20passed-success" alt="Test Suite" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/security%20audit-passed%20100%2F100-success" alt="Security Audit" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-informational" alt="License" /></a>
+</p>
 
-Production-grade, zero-dependency YouTube Music API optimized for serverless edge deployment with synchronized lyrics and 302 direct audio streaming.
+<p align="center">
+  <strong>Production-grade, zero-dependency YouTube Music API optimized for serverless edge deployment with synchronized lyrics and 302 direct audio streaming.</strong>
+</p>
 
 ---
 
