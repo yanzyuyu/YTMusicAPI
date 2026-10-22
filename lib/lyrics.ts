@@ -29,8 +29,9 @@ export function cleanSearchTitle(title: string): string {
   if (!title) return "";
   return title
     .replace(/\s*[\(\[][^\)\]]*(?:video|audio|visualizer|lyrics?|mv|remastered|version|official|hd|4k)[^\)\]]*[\)\]]/gi, "")
-    .replace(/\s*(?:feat\.|ft\.)\s+.*$/gi, "")
+    .replace(/\s*[\(\[]?\s*(?:feat\.|ft\.)\s+[^\)\]]*[\)\]]?/gi, "")
     .replace(/\s*-\s*(?:single|ep|album|remastered|version)\s*$/gi, "")
+    .replace(/[\(\[]\s*[\)\]]/g, "")
     .trim();
 }
 

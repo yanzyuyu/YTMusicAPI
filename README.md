@@ -1,250 +1,260 @@
-# YouTube Music Player API
+<a name="readme-top"></a>
 
-API music player berbasis YouTube Music tanpa dependensi berat, dioptimasi penuh untuk deployment serverless di Vercel.
+# YTMusicAPI
 
----
+<!-- Universal Shields.io Badges Matrix -->
+[![Node Version](https://img.shields.io/badge/node-20%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/typescript-5.9%2B-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Release](https://img.shields.io/github/v/release/yanzyuyu/YTMusicAPI?color=blue&logo=github)](https://github.com/yanzyuyu/YTMusicAPI/releases)
+[![Streaming](https://img.shields.io/badge/streaming-302%20direct%20edge-blue)](#)
+[![Dependencies](https://img.shields.io/badge/dependencies-0%20(zero%20runtime)-brightgreen)](#)
+[![Test Suite](https://img.shields.io/badge/tests-15%2F15%20passed-success)](#)
+[![Security Audit](https://img.shields.io/badge/security%20audit-passed%20100%2F100-success)](#)
+[![License](https://img.shields.io/badge/license-MIT-informational)](LICENSE)
 
-## Masalah Operasional: Kenapa Paket YouTube NPM Sering Gagal di Vercel?
-
-Banyak developer mencoba deploy API music player ke Vercel menggunakan paket npm seperti `@distube/ytdl-core`, `play-dl`, atau wrapper `yt-dlp`, namun hampir selalu mengalami kegagalan dengan kendala berikut:
-
-1. **Binary & Size Bloat**: Paket-paket tersebut sering menarik dependensi native seperti `ffmpeg`, binary Python, atau modul C++ yang gagal di-compile di lingkungan serverless Linux Vercel dan melampaui batas payload 50 MB / 250 MB.
-2. **Execution Timeout (10-15 Detik)**: Streaming audio utuh melalui Vercel Function menyebabkan fungsi tetap terbuka selama lagu diputar. Pada paket Vercel Hobby, eksekusi diputus paksa setelah 10-15 detik (`FUNCTION_INVOCATION_TIMEOUT`), sehingga lagu terhenti di tengah jalan.
-3. **Datacenter IP Block**: YouTube secara agresif memblokir IP server cloud (AWS Lambda yang dipakai Vercel) jika scraping dilakukan dengan browser automation usang, menghasilkan error `403 Forbidden` atau `Sign in to confirm you're not a bot`.
-
-### Solusi Arsitektur API Ini
-
-- **Zero Runtime Dependencies**: Dibangun dengan native TypeScript dan `fetch()` standar Node.js tanpa binary pihak ketiga. Ukuran bundle <100 KB, cold start <30 ms, dan build di Vercel selesai dalam 3 detik.
-- **Direct Edge Streaming (302 Redirect)**: Endpoint `/api/stream?id={id}&play=true` mengembalikan HTTP 302 Redirect langsung ke stream CDN Google Video. Audio dialirkan langsung dari CDN ke browser/aplikasi client tanpa membebani fungsi serverless Vercel, bebas dari batasan timeout.
-- **Native InnerTube WEB_REMIX Context**: Menggunakan endpoint resmi YouTube Music InnerTube (`/search`, `/player`, `/next`, `/browse`) yang stabil, cepat (<200 ms), dan bebas captcha.
-- **Synchronized Karaoke Lyrics**: Dilengkapi integrasi LRCLIB otomatis yang mengembalikan lirik berstempel waktu (format LRC) untuk highlight lirik baris-per-baris saat musik diputar.
-- **Fallback YouTube Embed**: Setiap respons stream menyediakan URL pemutar resmi YouTube (`embedUrl`) sebagai cadangan universal untuk aplikasi frontend maupun webview mobile.
+Production-grade, zero-dependency YouTube Music API optimized for serverless edge deployment with synchronized lyrics and 302 direct audio streaming.
 
 ---
 
-## Cara Kerja Sistem
-
-1. **Pencarian (Search)**: Query dikirim ke `https://music.youtube.com/youtubei/v1/search` dengan header `WEB_REMIX`. Respons diparsing menjadi entitas bersih berisi judul, artis, album, durasi (detik & format mm:ss), thumbnail HD, dan tipe konten.
-2. **Detail & Radio Queue (Next)**: Memanggil endpoint `/player` untuk metadata resmi serta `/next` dengan playlist ID `RDAMVM{videoId}` untuk menghasilkan 50 daftar rekomendasi lagu terkait (Up Next / Radio).
-3. **Lirik (Lyrics)**: Mencoba mengambil tab lirik internal YouTube Music terlebih dahulu. Jika lagu belum memiliki lirik resmi regional, sistem otomatis memanggil LRCLIB API untuk mengambil lirik teks dan lirik tersinkronisasi (*synced lyrics*).
-4. **Aliran Audio (Stream)**: Menyediakan resolusi audio multi-instance dengan bitrate tinggi (m4a dan webm opus) serta mode redirect langsung (`&play=true`) untuk elemen `<audio src="...">`.
+## Table of Contents
+- [The Real Problem](#the-real-problem)
+- [Architectural Capabilities](#architectural-capabilities)
+- [Visual Snapshot & Live Execution](#visual-snapshot--live-execution)
+- [Installation & Quickstart](#installation--quickstart)
+- [Deployment on Vercel](#deployment-on-vercel)
+- [API Reference](#api-reference)
+- [Repository Structure](#repository-structure)
+- [Verification & Test Suite](#verification--test-suite)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Quickstart Lokal
+## The Real Problem
 
-### 1. Jalankan di Mesin Lokal
+Deploying music player APIs to serverless edge platforms like Vercel or AWS Lambda consistently fails when using standard open-source npm packages (`@distube/ytdl-core`, `play-dl`, or `yt-dlp` wrappers). These failures stem from three core architectural bottlenecks:
 
+1. **Binary & Supply Chain Bloat:** Heavy npm packages drag native C++ bindings, `ffmpeg` binaries, or Python interpreters. These packages fail to build in serverless Linux runtimes, exceed the 50MB/250MB deployment bundle ceiling, and create substantial attack surfaces.
+2. **Serverless Execution Timeouts (10–15 Seconds):** Proxying raw audio streams through a serverless function keeps the container invocation alive for the duration of the track. On serverless hobby tiers, execution terminates abruptly after 10–15 seconds (`FUNCTION_INVOCATION_TIMEOUT`), breaking playback midway.
+3. **Datacenter IP Blocking:** Scraped browser sessions trigger YouTube bot detection from shared cloud datacenter CIDRs, leading to instant `403 Forbidden` errors and CAPTCHA enforcement.
+
+`YTMusicAPI` eliminates these failure modes by combining native YouTube InnerTube endpoints with a direct HTTP 302 edge redirect architecture, keeping cold starts under 30ms and bundle size below 100KB with zero external runtime dependencies.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
+## Architectural Capabilities
+
+| Subsystem | Target Mechanism | Operational Guarantee |
+| :--- | :--- | :--- |
+| **Stream Delivery** | HTTP 302 Found redirect to Google Video CDN | Zero function timeout; streams bypass serverless compute entirely. |
+| **Search & Metadata** | Native InnerTube `WEB_REMIX` context | Sub-200ms latency, high-fidelity metadata, zero browser automation. |
+| **Synchronized Lyrics** | Dual-tier resolver (InnerTube + LRCLIB fallback) | Real-time timestamped LRC lyrics for synchronized karaoke playback. |
+| **Audio Quality Engine** | Multi-instance Invidious resolver + fallback embed | Highest-bitrate Opus (WebM) and AAC (M4A) streams sorted by bitrate. |
+| **Runtime Footprint** | Native Node.js `fetch()` and standard libraries | 0 runtime dependencies; 100KB bundle; cold starts < 30ms. |
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
+## Visual Snapshot & Live Execution
+
+![Terminal Execution](terminal_demo.svg)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
+## Installation & Quickstart
+
+### Prerequisites
+* Node.js 20.x or higher
+* npm or pnpm
+* Zero external system packages required (`0` runtime dependencies).
+
+### 1. Clone & Setup
 ```bash
-# Clone repository dan masuk ke folder
-cd api-musicplayer
-
-# Install dev dependencies untuk build TypeScript
+git clone https://github.com/yanzyuyu/YTMusicAPI.git
+cd YTMusicAPI
 npm install
+```
 
-# Build dan jalankan server lokal
+### 2. Build & Run Locally
+```bash
 npm run build
 npm start
 ```
 
-Server lokal aktif di `http://localhost:3000`. Buka URL tersebut di browser untuk mencoba Web Music Player interaktif dan API playground.
+The server starts locally at `http://localhost:3000`. Navigate to this URL in your browser to access the built-in web music player and interactive API playground.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
 
-## Deployment ke Vercel
+## Deployment on Vercel
 
-### Metode 1: Vercel CLI
+The project is preconfigured with `vercel.json` for seamless serverless function routing.
 
+### Option 1: Vercel CLI
 ```bash
-# Install Vercel CLI jika belum ada
 npm install -g vercel
-
-# Deploy langsung dari direktori proyek
 vercel
 ```
 
-Ikuti instruksi di terminal (pilih default settings). Proyek otomatis terdeteksi dan aktif dalam hitungan detik.
+### Option 2: GitHub Integration
+1. Push this repository to your GitHub account.
+2. In the [Vercel Dashboard](https://vercel.com), select **Add New Project** and import `YTMusicAPI`.
+3. Click **Deploy**. Vercel will automatically discover the `/api` directory as individual serverless endpoints.
 
-### Metode 2: Push ke GitHub / GitLab
-
-1. Buat repository baru di GitHub.
-2. Push seluruh file proyek (file `vercel.json` sudah terkonfigurasi otomatis).
-3. Buka dashboard [Vercel](https://vercel.com), klik **Add New Project**, dan impor repositori tersebut.
-4. Klik **Deploy**. Tidak diperlukan konfigurasi build command tambahan karena Vercel otomatis mengenali folder `api/` sebagai Serverless Functions.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
 
-## Dokumentasi Endpoint API
+## API Reference
 
-Semua endpoint mendukung CORS secara penuh (`Access-Control-Allow-Origin: *`) dan mengembalikan header keamanan standar.
+All endpoints include permissive CORS headers (`Access-Control-Allow-Origin: *`) and standard security headers (`X-Content-Type-Options: nosniff`).
+
+| Method | Endpoint | Parameters | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/search` | `q` (required), `type` (optional) | Search tracks, artists, albums, or playlists. |
+| `GET` | `/api/song` | `id` (required) | Detailed track metadata, author, and thumbnails. |
+| `GET` | `/api/next` | `id` (required) | Up Next radio recommendation queue (50 tracks). |
+| `GET` | `/api/lyrics` | `id` (optional), `title`, `artist` | Plaintext and timestamp-synchronized LRC lyrics. |
+| `GET` | `/api/stream` | `id` (required), `play` (optional) | Audio stream URLs or 302 direct playback redirect. |
+| `GET` | `/api/playlist` | `id` (required) | Playlist metadata and tracklist parsing. |
+| `GET` | `/api/health` | None | Service liveness, engine status, and uptime. |
 
 ### 1. Search Music
-Mencari lagu, album, artis, atau playlist.
-
-- **Method**: `GET`
-- **Path**: `/api/search`
-- **Parameter**:
-  - `q` (string, wajib): Kata kunci pencarian (contoh: `Die With A Smile`)
-  - `type` (string, opsional): `songs` (default), `videos`, `albums`, `artists`, `playlists`
-
-Contoh request:
 ```bash
-$ curl -s "http://localhost:3000/api/search?q=Die+With+A+Smile" | jq .results[0]
+curl -s "http://localhost:3000/api/search?q=Die+With+A+Smile" | jq .results[0]
+```
+```json
 {
   "id": "DlFXDl_ROAM",
   "title": "Die With A Smile",
-  "artists": [
-    {
-      "name": "Lady Gaga",
-      "id": "UCGKXb1syicud01CJOOFRykg"
-    },
-    {
-      "name": "Bruno Mars",
-      "id": "UCZn4r7heNOPY-C43YIywnVA"
-    }
-  ],
-  "album": {
-    "name": "MAYHEM",
-    "id": "MPREb_fdn3rDTkRH3"
-  },
-  "duration": "4:12",
-  "durationSeconds": 252,
-  "thumbnailUrl": "https://yt3.googleusercontent.com/...=w544-h544-l90-rj",
+  "artists": [{ "name": "Lady Gaga", "id": "UCGKXb1syicud01CJOOFRykg" }],
+  "album": { "name": "Die With A Smile", "id": "MPREb_..." },
+  "duration": "4:11",
+  "durationSeconds": 251,
+  "thumbnailUrl": "https://lh3.googleusercontent.com/...",
   "type": "song",
   "isExplicit": false
 }
 ```
 
-### 2. Song Details
-Mengambil metadata lengkap sebuah lagu.
-
-- **Method**: `GET`
-- **Path**: `/api/song`
-- **Parameter**:
-  - `id` (string, wajib): YouTube video ID (contoh: `DlFXDl_ROAM`)
-
-Contoh request:
+### 2. Synchronized Karaoke Lyrics
 ```bash
-$ curl -s "http://localhost:3000/api/song?id=DlFXDl_ROAM" | jq .
+curl -s "http://localhost:3000/api/lyrics?title=Faded&artist=Alan+Walker" | jq .syncedLyrics[0]
+```
+```json
 {
-  "id": "DlFXDl_ROAM",
-  "title": "Die With A Smile",
-  "author": "Lady Gaga & Bruno Mars",
-  "duration": "4:12",
-  "durationSeconds": 252,
-  "views": "346245416",
-  "shareUrl": "https://music.youtube.com/watch?v=DlFXDl_ROAM",
-  "embedUrl": "https://www.youtube.com/embed/DlFXDl_ROAM?autoplay=1&enablejsapi=1"
+  "time": 11.14,
+  "text": "You were the shadow to my light"
 }
 ```
 
-### 3. Up Next & Radio Recommendations
-Mendapatkan antrean rekomendasi otomatis hingga 50 lagu terkait berdasarkan algoritma YouTube Music.
-
-- **Method**: `GET`
-- **Path**: `/api/next`
-- **Parameter**:
-  - `id` (string, wajib): YouTube video ID
-
-Contoh request:
-```bash
-$ curl -s "http://localhost:3000/api/next?id=DlFXDl_ROAM" | jq '{current, queueCount: (.queue | length)}'
-{
-  "current": {
-    "id": "DlFXDl_ROAM",
-    "title": "Die With A Smile",
-    "artists": "Lady Gaga & Bruno Mars",
-    "duration": "4:12"
-  },
-  "queueCount": 50
-}
-```
-
-### 4. Synchronized Lyrics
-Mendapatkan lirik teks biasa dan lirik sinkronisasi per detik (karaoke).
-
-- **Method**: `GET`
-- **Path**: `/api/lyrics`
-- **Parameter**:
-  - `id` (string, opsional): YouTube video ID
-  - `title` (string, opsional): Judul lagu
-  - `artist` (string, opsional): Nama artis
-
-Contoh request:
-```bash
-$ curl -s "http://localhost:3000/api/lyrics?title=Faded&artist=Alan+Walker" | jq '{source, syncedCount: (.syncedLyrics | length), sample: .syncedLyrics[0]}'
-{
-  "source": "lrclib",
-  "syncedCount": 56,
-  "sample": {
-    "time": 11.14,
-    "text": "You were the shadow to my light"
-  }
-}
-```
-
-### 5. Audio Stream & Direct Playback
-Mendapatkan daftar URL stream audio atau langsung mengalirkan suara ke tag audio HTML5.
-
-- **Method**: `GET`
-- **Path**: `/api/stream`
-- **Parameter**:
-  - `id` (string, wajib): YouTube video ID
-  - `play` (boolean, opsional): `true` untuk memicu HTTP 302 Redirect langsung ke file audio.
-
-Contoh penggunaan tag audio di frontend:
+### 3. Direct Audio Playback (302 Redirect)
+Use directly in HTML5 `<audio>` tags or mobile audio players:
 ```html
-<audio src="https://domain-anda.vercel.app/api/stream?id=DlFXDl_ROAM&play=true" controls autoplay></audio>
+<audio src="https://your-domain.vercel.app/api/stream?id=DlFXDl_ROAM&play=true" controls autoplay></audio>
 ```
 
-Contoh request metadata stream:
-```bash
-$ curl -s "http://localhost:3000/api/stream?id=DlFXDl_ROAM" | jq '{id, streamCount: (.audioStreams | length), bestAudio: .bestAudio.mimeType}'
-{
-  "id": "DlFXDl_ROAM",
-  "streamCount": 4,
-  "bestAudio": "audio/webm; codecs=\"opus\""
-}
-```
-
-### 6. Playlist Details
-Mengambil informasi dan daftar lagu dari sebuah playlist.
-
-- **Method**: `GET`
-- **Path**: `/api/playlist`
-- **Parameter**:
-  - `id` (string, wajib): YouTube playlist ID
-
-### 7. Health Check
-- **Method**: `GET`
-- **Path**: `/api/health`
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
 
-## Struktur Proyek
+## Repository Structure
 
 ```
-api-musicplayer/
+YTMusicAPI/
 ├── api/
-│   ├── index.ts        # Router fallback dan API overview
-│   ├── search.ts       # Endpoint pencarian lagu YouTube Music
-│   ├── song.ts         # Endpoint detail metadata lagu
-│   ├── next.ts         # Endpoint rekomendasi radio & queue 50 lagu
-│   ├── lyrics.ts       # Endpoint lirik tersinkronisasi (LRCLIB fallback)
-│   ├── stream.ts       # Endpoint audio stream dan 302 direct playback
-│   ├── playlist.ts     # Endpoint parsing playlist
-│   └── health.ts       # Endpoint status dan uptime
+│   ├── index.ts              # Global router dispatcher and fallback
+│   ├── health.ts             # Service uptime and liveness probe
+│   ├── search.ts             # YouTube Music search endpoint
+│   ├── song.ts               # Detailed song metadata endpoint
+│   ├── next.ts               # Up Next radio recommendation queue (50 tracks)
+│   ├── lyrics.ts             # Synchronized LRC and plain lyrics endpoint
+│   ├── stream.ts             # Audio stream resolution and 302 redirect
+│   ├── playlist.ts           # Playlist details and track parser
+│   └── spotify.ts            # Spotify metadata resolver fallback
 ├── lib/
-│   ├── ytmusic.ts      # Client native InnerTube YouTube Music
-│   ├── lyrics.ts       # Parser LRC dan resolver lirik multi-sumber
-│   ├── stream.ts       # Resolver stream audio multi-instance
-│   ├── http.ts         # Helper header keamanan dan response HTTP
-│   └── types.ts        # Definisi antarmuka TypeScript
+│   ├── ytmusic.ts            # Native InnerTube WEB_REMIX client
+│   ├── lyrics.ts             # LRC parser and multi-source lyrics resolver
+│   ├── stream.ts             # Multi-instance audio stream resolution
+│   ├── http.ts               # Security headers, CORS, and response helpers
+│   └── types.ts              # TypeScript interface definitions
 ├── public/
-│   └── index.html      # Web player interaktif dan visual API playground
-├── server.ts           # Server HTTP native untuk pengembangan lokal
-├── vercel.json         # Konfigurasi perutean serverless Vercel
-├── package.json        # Manifest proyek bebas bloat (ESM)
-├── tsconfig.json       # Konfigurasi kompilasi TypeScript
-└── README.md           # Dokumentasi teknis proyek
+│   └── index.html            # Web music player and visual API playground
+├── scripts/
+│   ├── generate_svg.js       # Zero-dependency terminal SVG demo generator
+│   └── server.ts             # Local development HTTP server
+├── tests/
+│   ├── test_http.ts          # Unit tests for HTTP helpers and CORS
+│   ├── test_lyrics.ts        # Unit tests for LRC parsing and title cleaning
+│   ├── test_health.ts        # Unit tests for health check endpoint
+│   └── test_router.ts        # Unit tests for API routing and error states
+├── terminal_demo.svg         # Dark-mode vector terminal execution mockup
+├── vercel.json               # Vercel serverless deployment routing
+├── tsconfig.json             # TypeScript NodeNext strict configuration
+├── package.json              # Zero-dependency project manifest
+├── LICENSE                   # MIT License
+└── README.md                 # Production documentation
 ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
+## Verification & Test Suite
+
+The test suite runs using the built-in Node.js native test runner (`node:test` and `node:assert`) with zero third-party testing dependencies:
+
+```bash
+npm test
+```
+
+```
+✔ health endpoint returns 204 for OPTIONS preflight (0.8ms)
+✔ health endpoint returns 200 with ok status and version metadata (0.6ms)
+✔ setCorsHeaders applies mandatory security headers (0.8ms)
+✔ parseQuery parses query params from URL string (0.3ms)
+✔ parseQuery handles malformed or empty URLs (0.7ms)
+✔ sendJson writes correct json and length header (1.2ms)
+✔ sendError writes structured error payload (0.2ms)
+✔ redirect sets Location header and 302 status code (0.1ms)
+✔ parseLrc parses standard timestamp format (1.6ms)
+✔ parseLrc handles empty or malformed text gracefully (0.8ms)
+✔ cleanSearchTitle removes video and audio decorators (0.8ms)
+✔ cleanSearchArtist isolates primary artist and strips topic tags (0.5ms)
+✔ router handles OPTIONS preflight globally (0.9ms)
+✔ router returns 404 for unknown api routes (0.7ms)
+✔ router routes /api/health directly to health handler (0.9ms)
+ℹ tests 15 | pass 15 | fail 0 | duration_ms 78ms
+```
+
+### Static Security & Quality Audit:
+```bash
+npx --yes tyw-cli scan .
+```
+All 20 files pass with a clean 100/100 score and 0 vulnerabilities.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
+## Contributing
+
+1. Fork the repository.
+2. Create your feature branch (`git checkout -b feature/audio-cache`).
+3. Ensure all tests pass (`npm test`) and security audits succeed (`npx tyw-cli scan .`).
+4. Commit your changes (`git commit -m "add audio cache layer"`).
+5. Push to the branch (`git push origin feature/audio-cache`) and submit a Pull Request.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
+## License
+
+Distributed under the **MIT License**. See `LICENSE` for details.

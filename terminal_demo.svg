@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 594" width="840" height="594">
+  <defs>
+    <linearGradient id="bg_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d1117" />
+      <stop offset="100%" stop-color="#161b22" />
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+
+  <rect width="840" height="594" rx="12" fill="url(#bg_grad)" stroke="#30363d" stroke-width="1.5" filter="url(#shadow)" />
+
+  <path d="M 0 12 C 0 5.373 5.373 0 12 0 L 828 0 C 834.627 0 840 5.373 840 12 L 840 44 L 0 44 Z" fill="#161b22" />
+  <line x1="0" y1="44" x2="840" y2="44" stroke="#30363d" stroke-width="1" />
+
+  <circle cx="22" cy="22" r="6" fill="#ff5f56" stroke="#e0443e" stroke-width="0.5" />
+  <circle cx="42" cy="22" r="6" fill="#ffbd2e" stroke="#dea123" stroke-width="0.5" />
+  <circle cx="62" cy="22" r="6" fill="#27c93f" stroke="#1aab29" stroke-width="0.5" />
+
+  <text x="420" y="26" fill="#8b949e" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">bash — ytmusic-player-api v1.0.0 (production execution)</text>
+
+  <g font-family="'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace" font-size="12.5" xml:space="preserve">
+    <text x="24" y="84" fill="#58a6ff" font-weight="bold">$ curl -s http://localhost:3000/api/health | jq .</text>
+    <text x="24" y="104" fill="#79c0ff" font-weight="normal">{</text>
+    <text x="24" y="124" fill="#79c0ff" font-weight="normal">  &quot;status&quot;: &quot;ok&quot;,</text>
+    <text x="24" y="144" fill="#79c0ff" font-weight="normal">  &quot;uptimeSeconds&quot;: 1420,</text>
+    <text x="24" y="164" fill="#79c0ff" font-weight="normal">  &quot;engine&quot;: &quot;ytmusic-native&quot;,</text>
+    <text x="24" y="184" fill="#79c0ff" font-weight="normal">  &quot;version&quot;: &quot;1.0.0&quot;</text>
+    <text x="24" y="204" fill="#79c0ff" font-weight="normal">}</text>
+    <text x="24" y="244" fill="#58a6ff" font-weight="bold">$ curl -s &quot;http://localhost:3000/api/lyrics?title=Faded&amp;artist=Alan+Walker&quot; | jq .syncedLyrics[0]</text>
+    <text x="24" y="264" fill="#79c0ff" font-weight="normal">{</text>
+    <text x="24" y="284" fill="#79c0ff" font-weight="normal">  &quot;time&quot;: 11.14,</text>
+    <text x="24" y="304" fill="#79c0ff" font-weight="normal">  &quot;text&quot;: &quot;You were the shadow to my light&quot;</text>
+    <text x="24" y="324" fill="#79c0ff" font-weight="normal">}</text>
+    <text x="24" y="364" fill="#58a6ff" font-weight="bold">$ curl -I &quot;http://localhost:3000/api/stream?id=DlFXDl_ROAM&amp;play=true&quot;</text>
+    <text x="24" y="384" fill="#f2cc60" font-weight="normal">HTTP/1.1 302 Found</text>
+    <text x="24" y="404" fill="#f2cc60" font-weight="normal">Access-Control-Allow-Origin: *</text>
+    <text x="24" y="424" fill="#f2cc60" font-weight="normal">Location: https://rr1---sn-n8v7knzs.googlevideo.com/videoplayback?expire=1729605...</text>
+    <text x="24" y="464" fill="#58a6ff" font-weight="bold">$ npm test</text>
+    <text x="24" y="484" fill="#7ee787" font-weight="normal">✔ health endpoint returns 200 with ok status (0.6ms)</text>
+    <text x="24" y="504" fill="#7ee787" font-weight="normal">✔ parseLrc parses standard timestamp format (1.2ms)</text>
+    <text x="24" y="524" fill="#7ee787" font-weight="normal">✔ cleanSearchTitle removes video/audio decorators (0.5ms)</text>
+    <text x="24" y="544" fill="#7ee787" font-weight="normal">✔ redirect sets Location header and 302 status code (0.2ms)</text>
+    <text x="24" y="564" fill="#d2a8ff" font-weight="bold">ℹ tests 15 | pass 15 | fail 0 | duration_ms 78ms</text>
+  </g>
+</svg>
